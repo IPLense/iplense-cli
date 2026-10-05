@@ -1,0 +1,17 @@
+IPLense self-check  1.0.0
+
+IPv4  Check limit reached for this IP; try again in 7 min
+
+Local checks · IPv4
+  ChatGPT           Check failed
+  Claude            –               CA
+  Gemini            Available       XQZ
+  Netflix           Originals only  JP
+  Disney+           Unavailable     KR
+  YouTube Premium   Check failed
+  TikTok            Available       JP
+  Prime Video       Available       JP
+  Reddit            Check failed
+  Outbound port 25  Check failed
+
+[exit 1]

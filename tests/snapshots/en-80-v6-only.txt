@@ -1,0 +1,36 @@
+IPLense self-check  1.0.0
+
+IPv4  No connection
+
+IPv6  2001:db8:4860:1234:5678:9abc:def0:1
+  AS64501 · Beispiel Telekom · ISP
+  Operator  Beispiel Telekom AG · ISP
+  Germany · Bavaria · München
+
+  Score 91    IP Purity Risk value 4/100    Native · Residential
+
+  Source         Location                       Usage     Company   Risk value
+  IPLocate       DE · München                   ISP       ISP                0
+  ipapi.is       DE · Nürnberg                  ISP       ISP                0
+  IPinfo         DE · München                   ISP       –                  –
+
+  Risk factors   Hosting Proxy   VPN     Tor     Relay   Abuse   Bot
+  IPLocate       ·       ·       ·       ·       –       ·       –
+  ipapi.is       ·       ·       ·       ·       –       ·       –
+  ● Detected  · Not detected  – Not provided
+
+  Full result  https://iplense.cc/en/ip/2001:db8:4860:1234:5678:9abc:def0:1
+
+Local checks · IPv6
+  ChatGPT           Supported region  CA
+  Claude            Supported region  CA
+  Gemini            Available         CA
+  Netflix           Available         CA
+  Disney+           Available         CA
+  YouTube Premium   Available         CA
+  TikTok            Available         CA
+  Prime Video       Available         CA
+  Reddit            Available         CA
+  Outbound port 25  Available
+
+[exit 0]

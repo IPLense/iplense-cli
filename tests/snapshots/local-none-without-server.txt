@@ -1,0 +1,8 @@
+IPLense self-check  1.0.0
+
+IPv4  No connection
+
+IPv6  No connection
+Cannot reach iplense.cc
+
+[exit 1]

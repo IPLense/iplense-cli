@@ -1,0 +1,36 @@
+IPLense 自检  1.0.0
+
+IPv4  无连接
+
+IPv6  2001:db8:4860:1234:5678:9abc:def0:1
+  AS64501 · Beispiel Telekom · ISP
+  运营公司  Beispiel Telekom AG · ISP
+  Germany · Bavaria · München
+
+  评分 91    IP 纯净度 风险值 4/100    原生 · 住宅
+
+  数据源         位置                               使用类型  公司类型  风险值
+  IPLocate       DE · München                       家宽      家宽           0
+  ipapi.is       DE · Nürnberg                      家宽      家宽           0
+  IPinfo         DE · München                       家宽      –              –
+
+  风险因子       托管   代理   VPN    Tor    中转   滥用   机器人
+  IPLocate       ·      ·      ·      ·      –      ·      –
+  ipapi.is       ·      ·      ·      ·      –      ·      –
+  ● 命中  · 未命中  – 该来源不提供
+
+  完整结果  https://iplense.cc/zh/ip/2001:db8:4860:1234:5678:9abc:def0:1
+
+本地检测 · IPv6
+  ChatGPT           支持地区  CA
+  Claude            支持地区  CA
+  Gemini            可用      CA
+  Netflix           可用      CA
+  Disney+           可用      CA
+  YouTube Premium   可用      CA
+  TikTok            可用      CA
+  Prime Video       可用      CA
+  Reddit            可用      CA
+  出站 25 端口      可用
+
+[exit 0]

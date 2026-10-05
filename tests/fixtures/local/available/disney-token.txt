@@ -1,0 +1,2 @@
+200 https://disney.api.edge.bamgrid.com/token
+{"token_type":"bearer","expires_in":14400,"access_token":"stub-access","refresh_token":"stub-refresh"}

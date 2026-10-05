@@ -1,0 +1,19 @@
+IPLense self-check  1.0.0
+
+IPv4  Response format not supported; get the latest script
+
+IPv6  No connection
+
+Local checks · IPv4
+  ChatGPT           Supported region  CA
+  Claude            Supported region  CA
+  Gemini            Available         CA
+  Netflix           Available         CA
+  Disney+           Available         CA
+  YouTube Premium   Available         CA
+  TikTok            Available         CA
+  Prime Video       Available         CA
+  Reddit            Available         CA
+  Outbound port 25  Available
+
+[exit 1]

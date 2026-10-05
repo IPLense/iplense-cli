@@ -1,0 +1,19 @@
+IPLense 自检  1.0.0
+
+IPv4  响应格式不兼容，请获取最新脚本
+
+IPv6  无连接
+
+本地检测 · IPv4
+  ChatGPT           支持地区  CA
+  Claude            支持地区  CA
+  Gemini            可用      CA
+  Netflix           可用      CA
+  Disney+           可用      CA
+  YouTube Premium   可用      CA
+  TikTok            可用      CA
+  Prime Video       可用      CA
+  Reddit            可用      CA
+  出站 25 端口      可用
+
+[exit 1]

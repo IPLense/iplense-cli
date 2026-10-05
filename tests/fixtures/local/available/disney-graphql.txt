@@ -1,0 +1,2 @@
+200 https://disney.api.edge.bamgrid.com/graph/v1/device/graphql
+{"extensions":{"sdk":{"session":{"inSupportedLocation":true,"location":{"countryCode":"CA"}}}}}

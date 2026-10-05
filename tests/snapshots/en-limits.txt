@@ -1,0 +1,19 @@
+IPLense self-check  1.0.0
+
+IPv4  Check limit reached for this IP; try again in 7 min
+
+IPv6  Daily check limit reached; try again in 3 h
+
+Local checks · IPv4
+  ChatGPT           –          CA
+  Claude            –          CA
+  Gemini            Available  CA
+  Netflix           Available  CA
+  Disney+           Available  CA
+  YouTube Premium   Available  CA
+  TikTok            Available  CA
+  Prime Video       Available  CA
+  Reddit            Available  CA
+  Outbound port 25  Available
+
+[exit 1]

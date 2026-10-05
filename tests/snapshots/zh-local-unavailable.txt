@@ -1,0 +1,44 @@
+IPLense 自检  1.0.0
+
+IPv4  203.0.113.45
+  AS64500 · Example Cloud Networks · IDC
+  运营公司  Example Cloud Networks LLC · IDC
+  Japan · Tokyo
+
+  评分 72    IP 纯净度 风险值 18/100    原生 · 机房
+
+  数据源         位置                               使用类型  公司类型  风险值
+  IPLocate       JP · Tokyo                         机房      商业          35
+  ipapi.is       JP · Shinagawa                     机房      机房           8
+  ipdata         JP · Higashi-Ōsaka Industrial Di…  机房      商业          62
+  IPGeolocation  本次额度暂不可用
+  Abstract API   JP · Tokyo                         机房      –             中
+  Ipregistry     本次调用失败
+  IPinfo         JP · Tokyo                         机房      –              –
+  Proxycheck     JP · Tokyo                         商业      –              0
+  AbuseIPDB      –                                  –         –              0
+
+  风险因子       托管   代理   VPN    Tor    中转   滥用   机器人
+  IPLocate       ●      ·      ·      ·      –      ·      –
+  ipapi.is       ●      ·      ·      ·      –      ·      –
+  ipdata         ●      ●      –      ·      ·      ●      –
+  Abstract API   ●      ·      ·      ·      ·      –      –
+  Proxycheck     –      ·      ·      –      –      –      –
+  AbuseIPDB      –      –      –      –      –      ·      –
+  ● 命中  · 未命中  – 该来源不提供
+
+  完整结果  https://iplense.cc/zh/ip/203.0.113.45
+
+本地检测 · IPv4
+  ChatGPT           不在支持地区  CN
+  Claude            不在支持地区  CN
+  Gemini            检测失败
+  Netflix           不可用
+  Disney+           不可用
+  YouTube Premium   不可用
+  TikTok            检测失败
+  Prime Video       检测失败
+  Reddit            不可用
+  出站 25 端口      不可用
+
+[exit 0]

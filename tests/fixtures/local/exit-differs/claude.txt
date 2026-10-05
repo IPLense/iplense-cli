@@ -1,0 +1,10 @@
+200 https://claude.ai/cdn-cgi/trace
+fl=1
+h=x
+ip=198.51.100.7
+ip6=2001:db8::7
+ts=1
+visit_scheme=https
+colo=YYZ
+loc=CA
+warp=off

@@ -1,0 +1,19 @@
+IPLense 自检  1.0.0
+
+IPv4  自检接口暂时停用
+
+IPv6  自检接口暂时停用
+
+本地检测 · IPv4
+  ChatGPT           –     CA
+  Claude            –     CA
+  Gemini            可用  CA
+  Netflix           可用  CA
+  Disney+           可用  CA
+  YouTube Premium   可用  CA
+  TikTok            可用  CA
+  Prime Video       可用  CA
+  Reddit            可用  CA
+  出站 25 端口      可用
+
+[exit 1]

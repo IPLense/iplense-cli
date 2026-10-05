@@ -1,0 +1,44 @@
+IPLense self-check  1.0.0
+
+IPv4  203.0.113.45
+  AS64500 · Example Cloud Networks · IDC
+  Operator  Example Cloud Networks LLC · IDC
+  Japan · Tokyo
+
+  Score 72    IP Purity Risk value 18/100    Native · Datacenter
+
+  Source         Location                       Usage     Company   Risk value
+  IPLocate       JP · Tokyo                     IDC       Business          35
+  ipapi.is       JP · Shinagawa                 IDC       IDC                8
+  ipdata         JP · Higashi-Ōsaka Industria…  IDC       Business          62
+  IPGeolocation  Quota temporarily unavailable
+  Abstract API   JP · Tokyo                     IDC       –             Medium
+  Ipregistry     This call failed
+  IPinfo         JP · Tokyo                     IDC       –                  –
+  Proxycheck     JP · Tokyo                     Business  –                  0
+  AbuseIPDB      –                              –         –                  0
+
+  Risk factors   Hosting Proxy   VPN     Tor     Relay   Abuse   Bot
+  IPLocate       ●       ·       ·       ·       –       ·       –
+  ipapi.is       ●       ·       ·       ·       –       ·       –
+  ipdata         ●       ●       –       ·       ·       ●       –
+  Abstract API   ●       ·       ·       ·       ·       –       –
+  Proxycheck     –       ·       ·       –       –       –       –
+  AbuseIPDB      –       –       –       –       –       ·       –
+  ● Detected  · Not detected  – Not provided
+
+  Full result  https://iplense.cc/en/ip/203.0.113.45
+
+Local checks · IPv4
+  ChatGPT           Not a supported region  CN
+  Claude            Not a supported region  CN
+  Gemini            Check failed
+  Netflix           Unavailable
+  Disney+           Unavailable
+  YouTube Premium   Unavailable
+  TikTok            Check failed
+  Prime Video       Check failed
+  Reddit            Unavailable
+  Outbound port 25  Unavailable
+
+[exit 0]

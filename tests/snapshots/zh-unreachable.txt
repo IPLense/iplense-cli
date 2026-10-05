@@ -1,0 +1,8 @@
+IPLense 自检  1.0.0
+
+IPv4  无连接
+
+IPv6  无连接
+无法连接 iplense.cc
+
+[exit 1]
