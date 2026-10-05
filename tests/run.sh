@@ -119,6 +119,12 @@ for lang in en zh; do
 	# Rate-limited server (no AI lists, so ChatGPT and Claude show the region only), and the rest of the states.
 	run "$lang-local-mixed" "LANG=${lang}_US.UTF-8 STUB_V4=limit-ip.kv:429 STUB_LOCAL=mixed STUB_SMTP=silent" -4
 done
+# The website's example (iplense.cc/{zh,en}/cli shows these files): IPv4 with local checks at 120 columns, from a fixture equal
+# to full-v4.kv but with a city short enough that no cell is cut; the example must show no ellipsis.
+for lang in en zh; do run "$lang-120-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=120 STUB_V4=page-v4.kv:200" -4; done
+no_ellipsis() { ! grep -q '…' "tests/snapshots/$1.txt"; }
+check "the page example has no cut cell (en)" no_ellipsis en-120-page-example
+check "the page example has no cut cell (zh)" no_ellipsis zh-120-page-example
 gemini_region() { grep -q "^  Gemini  *[^ ].*  $1\$" "tests/snapshots/$2.txt"; }
 check "Gemini CAN is shown as CA" gemini_region CA en-local-available
 check "an unknown three-letter code is shown as it is" gemini_region XQZ zh-local-mixed
