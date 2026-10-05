@@ -1,0 +1,59 @@
+[1;94m┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐[0m
+[1;94m│[0m                                                  [1mIPLense self-check[0m                                                  [1;94m│[0m
+[1;94m└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘[0m
+  [1m203.0.113.45[0m[2m · CLI 1.1.0 · 2026-10-05 01:00 UTC[0m
+
+[1;94m1. Basics[0m
+  [2mASN[0m            AS64500 · Example Cloud Networks  [97;41m IDC [0m
+  [2mOperator[0m       Example Cloud Networks LLC  [97;41m IDC [0m
+  [2mLocation[0m       Japan · Tokyo
+  [2mRegistered in[0m  JP
+  [2mIP Property[0m    [97;42m Native [0m [97;41m Datacenter [0m
+
+[1;94m2. Multi-source IP Types[0m
+  [2mSource[0m         [2mLocation[0m            [2m Usage[0m      [2m Company[0m
+  [1mIPLocate[0m       JP · Tokyo          [97;41m IDC [0m       [30;43m Business [0m
+  [1mipapi.is[0m       JP · Shinagawa      [97;41m IDC [0m       [97;41m IDC [0m
+  [1mipdata[0m         JP · Higashi-Ōsaka  [97;41m IDC [0m       [30;43m Business [0m
+  [1mAbstract API[0m   JP · Tokyo          [97;41m IDC [0m       [90m –[0m
+  [1mIPinfo[0m         JP · Tokyo          [97;41m IDC [0m       [90m –[0m
+  [1mProxycheck[0m     JP · Tokyo          [30;43m Business [0m  [90m –[0m
+  [1mIPGeolocation[0m  [33mQuota temporarily unavailable[0m
+  [1mIpregistry[0m     [31mThis call failed[0m
+
+[1;94m3. Risk scores[0m
+  [2mIPLense Score[0m                 [33m72[0m  [31m━━━━━━━━━━━━[0m[33m━━[0m[1m┃[0m[33m━[0m[32m━━━━[0m
+  [2mIP Purity Risk value[0m      [32m18/100[0m  [32m━━━[0m[1m┃[0m[33m━━━━━━[0m[31m━━━━━━━━━━[0m  [32mLow[0m
+
+  [2mSource[0m      [1mIPLocate[0m  [1mipapi.is[0m  [1mipdata[0m  [1mAbstract API[0m  [1mProxycheck[0m  [1mAbuseIPDB[0m
+  [2mRisk value[0m  [33m35[0m        [32m8[0m         [31m62[0m      [33mMedium[0m        [32m0[0m           [32m0[0m
+
+[1;94m4. Risk factors[0m
+  [2mSource[0m        [2mHosting[0m  [2mProxy[0m  [2mVPN[0m  [2mTor[0m  [2mRelay[0m  [2mAbuse[0m  [2mBot[0m
+  [1mIPLocate[0m      [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [90m–[0m      [32m·[0m      [90m–[0m
+  [1mipapi.is[0m      [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [90m–[0m      [32m·[0m      [90m–[0m
+  [1mipdata[0m        [31m●[0m        [31m●[0m      [90m–[0m    [32m·[0m    [32m·[0m      [31m●[0m      [90m–[0m
+  [1mAbstract API[0m  [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [32m·[0m      [90m–[0m      [90m–[0m
+  [1mProxycheck[0m    [90m–[0m        [32m·[0m      [32m·[0m    [90m–[0m    [90m–[0m      [90m–[0m      [90m–[0m
+  [1mAbuseIPDB[0m     [90m–[0m        [90m–[0m      [90m–[0m    [90m–[0m    [90m–[0m      [32m·[0m      [90m–[0m
+  [31m●[0m Detected  [32m·[0m Not detected  [90m–[0m Not provided
+
+[1;94m5. AI and streaming[0m[2m · IPv4[0m
+  [1mChatGPT[0m          [97;42m Supported region [0m  CA
+  [1mClaude[0m           [97;42m Supported region [0m  CA
+  [1mGemini[0m           [97;42m Available [0m         CA
+  [1mNetflix[0m          [97;42m Available [0m         CA
+  [1mDisney+[0m          [97;42m Available [0m         CA
+  [1mYouTube Premium[0m  [97;42m Available [0m         CA
+  [1mTikTok[0m           [97;42m Available [0m         CA
+  [1mPrime Video[0m      [97;42m Available [0m         CA
+  [1mReddit[0m           [97;42m Available [0m         CA
+
+[1;94m6. Outbound port 25[0m
+  [97;42m Available [0m
+
+[2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+  [2mFull result[0m    https://iplense.cc/en/ip/203.0.113.45
+  [2mAbout the CLI[0m  https://iplense.cc/en/cli
+
+[exit 0]

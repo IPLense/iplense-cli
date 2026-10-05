@@ -25,12 +25,30 @@ sha256sum iplense.sh
 | 参数 | 作用 |
 | --- | --- |
 | `-4` / `-6` | 只检测 IPv4 或 IPv6（默认两者都测） |
-| `-l zh\|en` | 输出语言（默认按 `LANG`） |
+| `-l zh\|en` | 输出语言，`cn` 同 `zh`（默认按 `LANG`） |
 | `-j` | 输出 JSON |
 | `-o 文件` | 同时把输出保存到文件（不含颜色） |
 | `-h` / `-V` | 帮助 / 版本 |
 
-只需要 bash 与 curl，不需要 root，不安装任何软件，除 `-o` 指定的文件外不写文件。只在终端里输出颜色；设置 `NO_COLOR=1` 可关闭。
+只需要 bash 与 curl，不需要 root，不安装任何软件，除 `-o` 指定的文件外不写文件。只在终端里输出颜色；设置 `NO_COLOR=1` 可关闭。`-o` 保存的文件与 JSON 输出不带颜色。
+
+## 颜色
+
+每种颜色都取自 IPLense 网站自身（网站代码 `code/assets`），按色相换成最接近的 ANSI 基本 16 色，常见终端都能显示。类型、等级与检测结果以底色标签显示（白字，黄底为黑字）；数字与标记直接着色。
+
+| 显示内容 | 网站样式（颜色） | 终端 |
+| --- | --- | --- |
+| 家宽类型、原生、住宅 / 家宽、可用、支持地区 | `.type-badge.state-isp`、`.semantic-badge.state-success`（`#08754b`）、`.outbound-ai-region.is-supported`（`--green` `#12885a`） | 绿底（42） |
+| 机房类型、机房、其他非原生、获取失败、不可用、不在支持地区 | `.type-badge.state-idc`（`--red` `#b72f3d`）、`.state-error`（`#a82332`）、`.outbound-ai-region.is-unsupported` | 红底（41） |
+| 商业类型、广播、专业模式“其他”类型、Netflix 仅自制内容 | `.type-badge.state-business`、`.semantic-badge.state-warning`、`.pro-type-table .canonical-badge.state-unknown`、`.tool-state.is-warning`（`--amber` `#a15c08`） | 黄底（43） |
+| 快速模式“Unknown”类型、检测失败 | `.semantic-badge.state-unknown`（`#596779`）、`.mini-cell.is-failed`（淡化） | 亮黑底（100） |
+| IPLense 评分：80 及以上 / 60–79 / 60 以下 | `.score-ring.score-high` / `medium` / `low`（`query_controller.ts`） | 绿 / 黄 / 红（32 / 33 / 31），附同样分段的 20 格刻度 |
+| 风险值：20 及以下 / 21–50 / 50 以上（纯净度与各数据源） | `.pro-risk-number.is-low` / `medium` / `high`（`query_controller.ts`）、`.purity-segment-*`（`QuickPurityCalculator`） | 绿 / 黄 / 红；纯净度附刻度与等级字 |
+| 风险因子：命中 / 未命中 / 不提供 | `.risk-cell.is-detected` / `.is-clear` / `.is-none` | 红 / 绿 / 亮黑（31 / 32 / 90） |
+| 额度暂不可用 / 调用失败 | `.pro-state[data-state="quota"]` / `[data-state="error"]` | 黄 / 红（33 / 31） |
+| 分节标题与报告头边框 | `--blue`（`#1769e0`） | 粗体亮蓝（94） |
+
+色相：绿（约 155°）最接近 ANSI 绿，红（约 355°）为 ANSI 红，琥珀（约 33°）为 ANSI 黄，蓝（215°）离 ANSI 蓝比青色近；石板灰几乎没有色相，取亮黑。蓝色取亮色版本，深色背景下也能看清。
 
 ## 检测内容
 
@@ -63,32 +81,66 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
 
 ## 示例
 
-示例输出，使用文档保留地址（`203.0.113.0/24`）：
+示例输出，使用文档保留地址（`203.0.113.0/24`），只检测 IPv4，80 列（各数据源风险值能放进一行时横排）：
 
 ```text
-IPLense 自检  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             IPLense 本机 IP 体检                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
 
-IPv4  203.0.113.45
-  AS64500 · Example Cloud Networks · IDC
-  运营公司  Example Cloud Networks LLC · IDC
-  Japan · Tokyo
+一、基础信息
+  ASN          AS64500 · Example Cloud Networks   IDC
+  运营公司     Example Cloud Networks LLC   IDC
+  位置         Japan · Tokyo
+  IP 注册地区  JP
+  IP 属性       原生   机房
 
-  评分 72    IP 纯净度 风险值 18/100    原生 · 机房
-
-  数据源         位置                               使用类型  公司类型  风险值
-  IPLocate       JP · Tokyo                         机房      商业          35
-  ipapi.is       JP · Shinagawa                     机房      机房           8
+二、多源 IP 类型
+  数据源         位置                                    使用类型    公司类型
+  IPLocate       JP · Tokyo                              机房        商业
+  ipapi.is       JP · Shinagawa                          机房        机房
+  ipdata         JP · Higashi-Ōsaka                      机房        商业
+  Abstract API   JP · Tokyo                              机房        –
+  IPinfo         JP · Tokyo                              机房        –
+  Proxycheck     JP · Tokyo                              商业        –
   IPGeolocation  本次额度暂不可用
-  ...
+  Ipregistry     本次调用失败
 
+三、风险评分
+  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━
+  IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
+
+  数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
+  风险值  35        8         62      中            0           0
+
+四、风险因子
+  数据源         托管   代理   VPN    Tor    中转   滥用   机器人
+  IPLocate       ●      ·      ·      ·      –      ·      –
+  ipapi.is       ●      ·      ·      ·      –      ·      –
+  ipdata         ●      ●      –      ·      ·      ●      –
+  Abstract API   ●      ·      ·      ·      ·      –      –
+  Proxycheck     –      ·      ·      –      –      –      –
+  AbuseIPDB      –      –      –      –      –      ·      –
+  ● 命中  · 未命中  – 该来源不提供
+
+五、AI 与流媒体 · IPv4
+  ChatGPT            支持地区   CA
+  Claude             支持地区   CA
+  Gemini             可用       CA
+  Netflix            可用       CA
+  Disney+            可用       CA
+  YouTube Premium    可用       CA
+  TikTok             可用       CA
+  Prime Video        可用       CA
+  Reddit             可用       CA
+
+六、出站 25 端口
+   可用
+
+────────────────────────────────────────────────────────────────────────────────
   完整结果  https://iplense.cc/zh/ip/203.0.113.45
-
-本地检测 · IPv4
-  ChatGPT           支持地区  CA
-  Claude            支持地区  CA
-  Netflix           可用      CA
-  ...
-  出站 25 端口      可用
+  关于 CLI  https://iplense.cc/zh/cli
 ```
 
 ## 开发

@@ -3,11 +3,24 @@
 └──────────────────────────────────────────────────────────────────────────────┘
   CLI 1.1.0
 
-  IPv4  No connection
-  IPv6  No connection
+  IPv4  Check limit reached for this IP; try again in 7 min
+  IPv6  No IPv6 exit: the request arrived over IPv4 (203.0.113.45)
+
+1. AI and streaming · IPv4
+  ChatGPT           –           CA
+  Claude            –           CA
+  Gemini            Available   CA
+  Netflix           Available   CA
+  Disney+           Available   CA
+  YouTube Premium   Available   CA
+  TikTok            Available   CA
+  Prime Video       Available   CA
+  Reddit            Available   CA
+
+2. Outbound port 25
+   Available
 
 ────────────────────────────────────────────────────────────────────────────────
   About the CLI  https://iplense.cc/en/cli
-Cannot reach iplense.cc
 
 [exit 1]

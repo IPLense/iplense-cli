@@ -1,63 +1,89 @@
-IPLense 自检  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                 IPLense 本机 IP 体检                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45 · 2001:db8:4860:1234:5678:9abc:def0:1 · CLI 1.1.0 · 2026-10-05 01:00 UTC
 
-IPv4  203.0.113.45
-  AS64500 · Example Cloud Networks · IDC
-  运营公司  Example Cloud Networks LLC · IDC
-  Japan · Tokyo
+一、基础信息
+  IPv4
+  ASN          AS64500 · Example Cloud Networks   IDC
+  运营公司     Example Cloud Networks LLC   IDC
+  位置         Japan · Tokyo
+  IP 注册地区  JP
+  IP 属性       原生   机房
 
-  评分 72    IP 纯净度 风险值 18/100    原生 · 机房
+  IPv6
+  ASN          AS64501 · Beispiel Telekom   ISP
+  运营公司     Beispiel Telekom AG   ISP
+  位置         Germany · Bavaria · München
+  IP 注册地区  DE
+  IP 属性       原生   住宅
 
-  数据源         位置                                        使用类型    公司类型    风险值
-  IPLocate       JP · Tokyo                                  机房        商业            35
-  ipapi.is       JP · Tokyo · Shinagawa                      机房        机房             8
-  ipdata         JP · Osaka · Higashi-Ōsaka Industrial Dis…  机房        商业            62
+二、多源 IP 类型
+  IPv4
+  数据源         位置                                                使用类型   公司类型
+  IPLocate       JP · Tokyo                                          机房       商业
+  ipapi.is       JP · Shinagawa                                      机房       机房
+  ipdata         JP · Higashi-Ōsaka Industrial District North Ward   机房       商业
+  Abstract API   JP · Tokyo                                          机房       –
+  IPinfo         JP · Tokyo                                          机房       –
+  Proxycheck     JP · Tokyo                                          商业       –
   IPGeolocation  本次额度暂不可用
-  Abstract API   JP · Tokyo                                  机房        –               中
   Ipregistry     本次调用失败
-  IPinfo         JP · Tokyo                                  机房        –                –
-  Proxycheck     JP · Tokyo                                  商业        –                0
-  AbuseIPDB      –                                           –           –                0
 
-  风险因子       托管   代理   VPN    Tor    中转   滥用   机器人
-  IPLocate       ●      ·      ·      ·      –      ·      –
-  ipapi.is       ●      ·      ·      ·      –      ·      –
-  ipdata         ●      ●      –      ·      ·      ●      –
-  Abstract API   ●      ·      ·      ·      ·      –      –
-  Proxycheck     –      ·      ·      –      –      –      –
-  AbuseIPDB      –      –      –      –      –      ·      –
+  IPv6
+  数据源    位置            使用类型   公司类型
+  IPLocate  DE · München    家宽       家宽
+  ipapi.is  DE · Nürnberg   家宽       家宽
+  IPinfo    DE · München    家宽       –
+
+三、风险评分
+  IPv4
+  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━
+  IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
+
+  数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
+  风险值  35        8         62      中            0           0
+
+  IPv6
+  IPLense 评分          91  ━━━━━━━━━━━━━━━━━━┃━
+  IP 纯净度 风险值   4/100  ┃━━━━━━━━━━━━━━━━━━━  低
+
+  数据源  IPLocate  ipapi.is
+  风险值  0         0
+
+四、风险因子
+  IPv4
+  数据源        托管  代理  VPN  Tor  中转  滥用  机器人
+  IPLocate      ●     ·     ·    ·    –     ·     –
+  ipapi.is      ●     ·     ·    ·    –     ·     –
+  ipdata        ●     ●     –    ·    ·     ●     –
+  Abstract API  ●     ·     ·    ·    ·     –     –
+  Proxycheck    –     ·     ·    –    –     –     –
+  AbuseIPDB     –     –     –    –    –     ·     –
+
+  IPv6
+  数据源    托管  代理  VPN  Tor  中转  滥用  机器人
+  IPLocate  ·     ·     ·    ·    –     ·     –
+  ipapi.is  ·     ·     ·    ·    –     ·     –
   ● 命中  · 未命中  – 该来源不提供
 
+五、AI 与流媒体 · IPv4
+  ChatGPT           支持地区   CA
+  Claude            支持地区   CA
+  Gemini            可用       CA
+  Netflix           可用       CA
+  Disney+           可用       CA
+  YouTube Premium   可用       CA
+  TikTok            可用       CA
+  Prime Video       可用       CA
+  Reddit            可用       CA
+
+六、出站 25 端口
+   可用
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   完整结果  https://iplense.cc/zh/ip/203.0.113.45
-
-IPv6  2001:db8:4860:1234:5678:9abc:def0:1
-  AS64501 · Beispiel Telekom · ISP
-  运营公司  Beispiel Telekom AG · ISP
-  Germany · Bavaria · München
-
-  评分 91    IP 纯净度 风险值 4/100    原生 · 住宅
-
-  数据源         位置                                        使用类型    公司类型    风险值
-  IPLocate       DE · Bavaria · München                      家宽        家宽             0
-  ipapi.is       DE · Bavaria · Nürnberg                     家宽        家宽             0
-  IPinfo         DE · 巴伐利亚州 · München                   家宽        –                –
-
-  风险因子       托管   代理   VPN    Tor    中转   滥用   机器人
-  IPLocate       ·      ·      ·      ·      –      ·      –
-  ipapi.is       ·      ·      ·      ·      –      ·      –
-  ● 命中  · 未命中  – 该来源不提供
-
-  完整结果  https://iplense.cc/zh/ip/2001:db8:4860:1234:5678:9abc:def0:1
-
-本地检测 · IPv4
-  ChatGPT           支持地区  CA
-  Claude            支持地区  CA
-  Gemini            可用      CA
-  Netflix           可用      CA
-  Disney+           可用      CA
-  YouTube Premium   可用      CA
-  TikTok            可用      CA
-  Prime Video       可用      CA
-  Reddit            可用      CA
-  出站 25 端口      可用
+            https://iplense.cc/zh/ip/2001:db8:4860:1234:5678:9abc:def0:1
+  关于 CLI  https://iplense.cc/zh/cli
 
 [exit 0]

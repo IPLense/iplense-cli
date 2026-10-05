@@ -11,13 +11,13 @@
   IP Property     Native   Datacenter
 
 2. Multi-source IP Types
-  Source         Location                                Usage       Company
-  IPLocate       JP · Tokyo                              IDC         Business
-  ipapi.is       JP · Shinagawa                          IDC         IDC
-  ipdata         JP · Higashi-Ōsaka Industrial Distri…   IDC         Business
-  Abstract API   JP · Tokyo                              IDC         –
-  IPinfo         JP · Tokyo                              IDC         –
-  Proxycheck     JP · Tokyo                              Business    –
+  Source         Location             Usage       Company
+  IPLocate       JP · Tokyo           IDC         Business
+  ipapi.is       JP · Shinagawa       IDC         IDC
+  ipdata         JP · Higashi-Ōsaka   IDC         Business
+  Abstract API   JP · Tokyo           IDC         –
+  IPinfo         JP · Tokyo           IDC         –
+  Proxycheck     JP · Tokyo           Business    –
   IPGeolocation  Quota temporarily unavailable
   Ipregistry     This call failed
 
@@ -39,15 +39,15 @@
   ● Detected  · Not detected  – Not provided
 
 5. AI and streaming · IPv4
-  ChatGPT           Check failed
-  Claude            Check failed
-  Gemini            Check failed
-  Netflix           Check failed
-  Disney+           Check failed
-  YouTube Premium   Check failed
-  TikTok            Check failed
-  Prime Video       Check failed
-  Reddit            Check failed
+  ChatGPT           Supported region   CA
+  Claude            Supported region   CA
+  Gemini            Available          CA
+  Netflix           Available          CA
+  Disney+           Available          CA
+  YouTube Premium   Available          CA
+  TikTok            Available          CA
+  Prime Video       Available          CA
+  Reddit            Available          CA
 
 6. Outbound port 25
    Available

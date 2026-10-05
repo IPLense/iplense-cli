@@ -1,17 +1,25 @@
-IPLense 自检  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             IPLense 本机 IP 体检                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+  CLI 1.1.0
 
-IPv4  本 IP 检测次数已达上限，7 分钟后再试
+  IPv4  本 IP 检测次数已达上限，7 分钟后再试
 
-本地检测 · IPv4
+一、AI 与流媒体 · IPv4
   ChatGPT           检测失败
-  Claude            –           CA
-  Gemini            可用        XQZ
-  Netflix           仅自制内容  JP
-  Disney+           不可用      KR
+  Claude            –            CA
+  Gemini            可用         XQZ
+  Netflix           仅自制内容   JP
+  Disney+           不可用       KR
   YouTube Premium   检测失败
-  TikTok            可用        JP
-  Prime Video       可用        JP
+  TikTok            可用         JP
+  Prime Video       可用         JP
   Reddit            检测失败
-  出站 25 端口      检测失败
+
+二、出站 25 端口
+   检测失败
+
+────────────────────────────────────────────────────────────────────────────────
+  关于 CLI  https://iplense.cc/zh/cli
 
 [exit 1]

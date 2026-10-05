@@ -11,13 +11,13 @@
   IP 属性       原生   机房
 
 二、多源 IP 类型
-  数据源         位置                                      使用类型   公司类型
-  IPLocate       JP · Tokyo                                机房       商业
-  ipapi.is       JP · Shinagawa                            机房       机房
-  ipdata         JP · Higashi-Ōsaka Industrial District…   机房       商业
-  Abstract API   JP · Tokyo                                机房       –
-  IPinfo         JP · Tokyo                                机房       –
-  Proxycheck     JP · Tokyo                                商业       –
+  数据源         位置                 使用类型   公司类型
+  IPLocate       JP · Tokyo           机房       商业
+  ipapi.is       JP · Shinagawa       机房       机房
+  ipdata         JP · Higashi-Ōsaka   机房       商业
+  Abstract API   JP · Tokyo           机房       –
+  IPinfo         JP · Tokyo           机房       –
+  Proxycheck     JP · Tokyo           商业       –
   IPGeolocation  本次额度暂不可用
   Ipregistry     本次调用失败
 

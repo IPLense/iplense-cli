@@ -1,46 +1,62 @@
-IPLense self-check  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              IPLense self-check                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
 
-IPv4  203.0.113.45
-  AS64500 · Example Cloud Networks · IDC
-  Operator  Example Cloud Networks LLC · IDC
-  Japan · Tokyo
+1. Basics
+  IPv4
+  ASN            AS64500 · Example Cloud Networks   IDC
+  Operator       Example Cloud Networks LLC   IDC
+  Location       Japan · Tokyo
+  Registered in  JP
+  IP Property     Native   Datacenter
 
-  Score 72    IP Purity Risk value 18/100    Native · Datacenter
+  IPv6  No connection
 
-  Source         Location                       Usage     Company   Risk value
-  IPLocate       JP · Tokyo                     IDC       Business          35
-  ipapi.is       JP · Shinagawa                 IDC       IDC                8
-  ipdata         JP · Higashi-Ōsaka Industria…  IDC       Business          62
+2. Multi-source IP Types
+  Source         Location                                Usage       Company
+  IPLocate       JP · Tokyo                              IDC         Business
+  ipapi.is       JP · Shinagawa                          IDC         IDC
+  ipdata         JP · Higashi-Ōsaka Industrial Distri…   IDC         Business
+  Abstract API   JP · Tokyo                              IDC         –
+  IPinfo         JP · Tokyo                              IDC         –
+  Proxycheck     JP · Tokyo                              Business    –
   IPGeolocation  Quota temporarily unavailable
-  Abstract API   JP · Tokyo                     IDC       –             Medium
   Ipregistry     This call failed
-  IPinfo         JP · Tokyo                     IDC       –                  –
-  Proxycheck     JP · Tokyo                     Business  –                  0
-  AbuseIPDB      –                              –         –                  0
 
-  Risk factors   Hosting Proxy   VPN     Tor     Relay   Abuse   Bot
-  IPLocate       ●       ·       ·       ·       –       ·       –
-  ipapi.is       ●       ·       ·       ·       –       ·       –
-  ipdata         ●       ●       –       ·       ·       ●       –
-  Abstract API   ●       ·       ·       ·       ·       –       –
-  Proxycheck     –       ·       ·       –       –       –       –
-  AbuseIPDB      –       –       –       –       –       ·       –
+3. Risk scores
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━
+  IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
+
+  Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
+  Risk value  35        8         62      Medium        0           0
+
+4. Risk factors
+  Source        Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate      ●        ·      ·    ·    –      ·      –
+  ipapi.is      ●        ·      ·    ·    –      ·      –
+  ipdata        ●        ●      –    ·    ·      ●      –
+  Abstract API  ●        ·      ·    ·    ·      –      –
+  Proxycheck    –        ·      ·    –    –      –      –
+  AbuseIPDB     –        –      –    –    –      ·      –
   ● Detected  · Not detected  – Not provided
 
-  Full result  https://iplense.cc/en/ip/203.0.113.45
+5. AI and streaming · IPv4
+  ChatGPT           Supported region   CA
+  Claude            Supported region   CA
+  Gemini            Available          CA
+  Netflix           Available          CA
+  Disney+           Available          CA
+  YouTube Premium   Available          CA
+  TikTok            Available          CA
+  Prime Video       Available          CA
+  Reddit            Available          CA
 
-IPv6  No connection
+6. Outbound port 25
+   Available
 
-Local checks · IPv4
-  ChatGPT           Supported region  CA
-  Claude            Supported region  CA
-  Gemini            Available         CA
-  Netflix           Available         CA
-  Disney+           Available         CA
-  YouTube Premium   Available         CA
-  TikTok            Available         CA
-  Prime Video       Available         CA
-  Reddit            Available         CA
-  Outbound port 25  Available
+────────────────────────────────────────────────────────────────────────────────
+  Full result    https://iplense.cc/en/ip/203.0.113.45
+  About the CLI  https://iplense.cc/en/cli
 
 [exit 0]

@@ -1,38 +1,47 @@
-IPLense 自检  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             IPLense 本机 IP 体检                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
 
-IPv4  203.0.113.45
-  AS64500 · Example Cloud Networks · IDC
-  运营公司  Example Cloud Networks LLC · IDC
-  Japan · Tokyo
+一、基础信息
+  ASN          AS64500 · Example Cloud Networks   IDC
+  运营公司     Example Cloud Networks LLC   IDC
+  位置         Japan · Tokyo
+  IP 注册地区  JP
+  IP 属性       原生   机房
 
-  评分 72    IP 纯净度 风险值 18/100    原生 · 机房
-
-  数据源         位置                               使用类型  公司类型  风险值
-  IPLocate       JP · Tokyo                         机房      商业          35
-  ipapi.is       JP · Shinagawa                     机房      机房           8
-  ipdata         JP · Higashi-Ōsaka Industrial Di…  机房      商业          62
+二、多源 IP 类型
+  数据源         位置                                      使用类型   公司类型
+  IPLocate       JP · Tokyo                                机房       商业
+  ipapi.is       JP · Shinagawa                            机房       机房
+  ipdata         JP · Higashi-Ōsaka Industrial District…   机房       商业
+  Abstract API   JP · Tokyo                                机房       –
+  IPinfo         JP · Tokyo                                机房       –
+  Proxycheck     JP · Tokyo                                商业       –
   IPGeolocation  本次额度暂不可用
-  Abstract API   JP · Tokyo                         机房      –             中
   Ipregistry     本次调用失败
-  IPinfo         JP · Tokyo                         机房      –              –
-  Proxycheck     JP · Tokyo                         商业      –              0
-  AbuseIPDB      –                                  –         –              0
 
-  风险因子       托管   代理   VPN    Tor    中转   滥用   机器人
-  IPLocate       ●      ·      ·      ·      –      ·      –
-  ipapi.is       ●      ·      ·      ·      –      ·      –
-  ipdata         ●      ●      –      ·      ·      ●      –
-  Abstract API   ●      ·      ·      ·      ·      –      –
-  Proxycheck     –      ·      ·      –      –      –      –
-  AbuseIPDB      –      –      –      –      –      ·      –
+三、风险评分
+  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━
+  IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
+
+  数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
+  风险值  35        8         62      中            0           0
+
+四、风险因子
+  数据源        托管  代理  VPN  Tor  中转  滥用  机器人
+  IPLocate      ●     ·     ·    ·    –     ·     –
+  ipapi.is      ●     ·     ·    ·    –     ·     –
+  ipdata        ●     ●     –    ·    ·     ●     –
+  Abstract API  ●     ·     ·    ·    ·     –     –
+  Proxycheck    –     ·     ·    –    –     –     –
+  AbuseIPDB     –     –     –    –    –     ·     –
   ● 命中  · 未命中  – 该来源不提供
 
-  完整结果  https://iplense.cc/zh/ip/203.0.113.45
-
-本地检测 · IPv4 · 出口 198.51.100.7
+五、AI 与流媒体 · IPv4 · 出口 198.51.100.7
   与上方检测的 IP 不同，平台看到的是这个出口
-  ChatGPT           支持地区  CA
-  Claude            支持地区  CA
+  ChatGPT           支持地区   CA
+  Claude            支持地区   CA
   Gemini            检测失败
   Netflix           检测失败
   Disney+           检测失败
@@ -40,6 +49,12 @@ IPv4  203.0.113.45
   TikTok            检测失败
   Prime Video       检测失败
   Reddit            检测失败
-  出站 25 端口      可用
+
+六、出站 25 端口
+   可用
+
+────────────────────────────────────────────────────────────────────────────────
+  完整结果  https://iplense.cc/zh/ip/203.0.113.45
+  关于 CLI  https://iplense.cc/zh/cli
 
 [exit 0]

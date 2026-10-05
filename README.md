@@ -26,13 +26,36 @@ Then run `bash iplense.sh`. The same file is attached to each release with `SHA2
 | Option | Meaning |
 | --- | --- |
 | `-4` / `-6` | Check IPv4 or IPv6 only (default: both) |
-| `-l zh\|en` | Output language (default from `LANG`) |
+| `-l zh\|en` | Output language; `cn` is the same as `zh` (default from `LANG`) |
 | `-j` | JSON output |
 | `-o FILE` | Also save the output to FILE (without colours) |
 | `-h` / `-V` | Help / version |
 
 It needs bash and curl. It does not need root, installs nothing, and writes no file except the one named with `-o`.
-Colour is used only when the output is a terminal; set `NO_COLOR=1` to turn it off.
+Colour is used only when the output is a terminal; set `NO_COLOR=1` to turn it off. The file written with `-o` and the
+JSON output carry no colour.
+
+## Colours
+
+Each colour is the website's own (in `code/assets` of the IPLense site), shown as the nearest of the 16 basic ANSI colours
+by hue so that every common terminal can show it. Types, levels and check results are labels on that background
+(white text, black on yellow); numbers and marks are in that colour.
+
+| Shown | Website class (colour) | Terminal |
+| --- | --- | --- |
+| ISP type, Native, Residential / home broadband, available, supported region | `.type-badge.state-isp`, `.semantic-badge.state-success` (`#08754b`), `.outbound-ai-region.is-supported` (`--green` `#12885a`) | green background (42) |
+| IDC type, Datacenter, other natures, failed field, unavailable, not a supported region | `.type-badge.state-idc` (`--red` `#b72f3d`), `.state-error` (`#a82332`), `.outbound-ai-region.is-unsupported` | red background (41) |
+| Business type, Broadcast, Professional "Other" type, Netflix originals only | `.type-badge.state-business`, `.semantic-badge.state-warning`, `.pro-type-table .canonical-badge.state-unknown`, `.tool-state.is-warning` (`--amber` `#a15c08`) | yellow background (43) |
+| Quick "Unknown" type, check failed | `.semantic-badge.state-unknown` (`#596779`), `.mini-cell.is-failed` (faded) | bright black background (100) |
+| IPLense score: 80 and up / 60–79 / below 60 | `.score-ring.score-high` / `medium` / `low` (`query_controller.ts`) | green / yellow / red (32 / 33 / 31), with a 20-cell scale in the same segments |
+| Risk value: up to 20 / 21–50 / above 50 (purity and each source) | `.pro-risk-number.is-low` / `medium` / `high` (`query_controller.ts`), `.purity-segment-*` (`QuickPurityCalculator`) | green / yellow / red, the purity value with its scale and level |
+| Risk factor: detected / not detected / not provided | `.risk-cell.is-detected` / `.is-clear` / `.is-none` | red / green / bright black (31 / 32 / 90) |
+| Quota unavailable / call failed | `.pro-state[data-state="quota"]` / `[data-state="error"]` | yellow / red (33 / 31) |
+| Section titles and the header border | `--blue` (`#1769e0`) | bold bright blue (94) |
+
+Hues: green (about 155°) is nearest ANSI green, red (about 355°) ANSI red, amber (about 33°) ANSI yellow, blue (215°) ANSI
+blue rather than cyan; the slate grey has almost no hue and is bright black. Blue is the bright one so that it reads on dark
+backgrounds.
 
 ## What it checks
 
@@ -69,32 +92,67 @@ See the [IPLense privacy policy](https://iplense.cc/en/privacy) for how iplense.
 
 ## Example
 
-Example output with documentation addresses (`203.0.113.0/24`):
+Example output with documentation addresses (`203.0.113.0/24`), IPv4 only, 80 columns (risk values stand side by side
+when they fit on one line):
 
 ```text
-IPLense self-check  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              IPLense self-check                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
 
-IPv4  203.0.113.45
-  AS64500 · Example Cloud Networks · IDC
-  Operator  Example Cloud Networks LLC · IDC
-  Japan · Tokyo
+1. Basics
+  ASN            AS64500 · Example Cloud Networks   IDC
+  Operator       Example Cloud Networks LLC   IDC
+  Location       Japan · Tokyo
+  Registered in  JP
+  IP Property     Native   Datacenter
 
-  Score 72    IP Purity Risk value 18/100    Native · Datacenter
-
-  Source         Location                       Usage     Company   Risk value
-  IPLocate       JP · Tokyo                     IDC       Business          35
-  ipapi.is       JP · Shinagawa                 IDC       IDC                8
+2. Multi-source IP Types
+  Source         Location                                Usage       Company
+  IPLocate       JP · Tokyo                              IDC         Business
+  ipapi.is       JP · Shinagawa                          IDC         IDC
+  ipdata         JP · Higashi-Ōsaka                      IDC         Business
+  Abstract API   JP · Tokyo                              IDC         –
+  IPinfo         JP · Tokyo                              IDC         –
+  Proxycheck     JP · Tokyo                              Business    –
   IPGeolocation  Quota temporarily unavailable
-  ...
+  Ipregistry     This call failed
 
-  Full result  https://iplense.cc/en/ip/203.0.113.45
+3. Risk scores
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━
+  IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
-Local checks · IPv4
-  ChatGPT           Supported region  CA
-  Claude            Supported region  CA
-  Netflix           Available         CA
-  ...
-  Outbound port 25  Available
+  Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
+  Risk value  35        8         62      Medium        0           0
+
+4. Risk factors
+  Source         Hosting Proxy   VPN     Tor     Relay   Abuse   Bot
+  IPLocate       ●       ·       ·       ·       –       ·       –
+  ipapi.is       ●       ·       ·       ·       –       ·       –
+  ipdata         ●       ●       –       ·       ·       ●       –
+  Abstract API   ●       ·       ·       ·       ·       –       –
+  Proxycheck     –       ·       ·       –       –       –       –
+  AbuseIPDB      –       –       –       –       –       ·       –
+  ● Detected  · Not detected  – Not provided
+
+5. AI and streaming · IPv4
+  ChatGPT            Supported region   CA
+  Claude             Supported region   CA
+  Gemini             Available          CA
+  Netflix            Available          CA
+  Disney+            Available          CA
+  YouTube Premium    Available          CA
+  TikTok             Available          CA
+  Prime Video        Available          CA
+  Reddit             Available          CA
+
+6. Outbound port 25
+   Available
+
+────────────────────────────────────────────────────────────────────────────────
+  Full result    https://iplense.cc/en/ip/203.0.113.45
+  About the CLI  https://iplense.cc/en/cli
 ```
 
 ## Development

@@ -1,19 +1,26 @@
-IPLense self-check  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              IPLense self-check                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+  CLI 1.1.0
 
-IPv4  The self-check is switched off
+  IPv4  The self-check is switched off
+  IPv6  The self-check is switched off
 
-IPv6  The self-check is switched off
+1. AI and streaming · IPv4
+  ChatGPT           –           CA
+  Claude            –           CA
+  Gemini            Available   CA
+  Netflix           Available   CA
+  Disney+           Available   CA
+  YouTube Premium   Available   CA
+  TikTok            Available   CA
+  Prime Video       Available   CA
+  Reddit            Available   CA
 
-Local checks · IPv4
-  ChatGPT           –          CA
-  Claude            –          CA
-  Gemini            Available  CA
-  Netflix           Available  CA
-  Disney+           Available  CA
-  YouTube Premium   Available  CA
-  TikTok            Available  CA
-  Prime Video       Available  CA
-  Reddit            Available  CA
-  Outbound port 25  Available
+2. Outbound port 25
+   Available
+
+────────────────────────────────────────────────────────────────────────────────
+  About the CLI  https://iplense.cc/en/cli
 
 [exit 1]

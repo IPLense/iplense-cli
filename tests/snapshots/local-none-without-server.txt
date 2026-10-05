@@ -1,8 +1,13 @@
-IPLense self-check  1.0.0
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              IPLense self-check                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+  CLI 1.1.0
 
-IPv4  No connection
+  IPv4  No connection
+  IPv6  No connection
 
-IPv6  No connection
+────────────────────────────────────────────────────────────────────────────────
+  About the CLI  https://iplense.cc/en/cli
 Cannot reach iplense.cc
 
 [exit 1]

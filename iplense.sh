@@ -22,7 +22,7 @@
 # public mail server; those see the connection IP. Nothing else about this machine is sent, and results stay here.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.0.0
+VERSION=1.1.0
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -37,10 +37,11 @@ OUT=
 t() {
 	local zh en
 	case $1 in
-	title) zh='IPLense 自检'; en='IPLense self-check' ;;
+	title) zh='IPLense 本机 IP 体检'; en='IPLense self-check' ;;
 	checking) zh='正在检测 IPv%s…'; en='Checking IPv%s…' ;;
 	no_conn) zh='无连接'; en='No connection' ;;
 	other_family) zh='无 IPv%s 出口：请求以 IPv%s 到达（%s）'; en='No IPv%s exit: the request arrived over IPv%s (%s)' ;;
+	other_family_shown) zh='无 IPv%s 出口：请求以 IPv%s 到达'; en='No IPv%s exit: the request arrived over IPv%s' ;;
 	all_failed) zh='无法连接 iplense.cc'; en='Cannot reach iplense.cc' ;;
 	cli_disabled) zh='自检接口暂时停用'; en='The self-check is switched off' ;;
 	header_required) zh='请求缺少客户端标识，请使用最新脚本'; en='Request not recognised; use the latest script' ;;
@@ -53,7 +54,8 @@ t() {
 	minutes) zh='%s 分钟'; en='%s min' ;;
 	hours) zh='%s 小时'; en='%s h' ;;
 	report) zh='完整结果'; en='Full result' ;;
-	local_title) zh='本地检测'; en='Local checks' ;;
+	cli_page) zh='关于 CLI'; en='About the CLI' ;;
+	platforms) zh='AI 与流媒体'; en='AI and streaming' ;;
 	local_progress) zh='本地检测 %s/%s…'; en='Local checks %s/%s…' ;;
 	local_exit) zh='出口 %s'; en='exit %s' ;;
 	local_exit_note) zh='与上方检测的 IP 不同，平台看到的是这个出口'; en='Differs from the IP checked above; the platforms see this exit' ;;
@@ -88,7 +90,7 @@ usage() {
 			'用法：bash <(curl -sL https://iplense.cc/cli) [选项]' \
 			'  -4         只检测 IPv4' \
 			'  -6         只检测 IPv6' \
-			'  -l zh|en   输出语言（默认按 LANG）' \
+			'  -l zh|en   输出语言（cn 同 zh；默认按 LANG）' \
 			'  -j         输出 JSON' \
 			'  -o 文件    同时把输出保存到文件' \
 			'  -h         显示本帮助' \
@@ -104,7 +106,7 @@ usage() {
 			'Usage: bash <(curl -sL https://iplense.cc/cli) [options]' \
 			'  -4         IPv4 only' \
 			'  -6         IPv6 only' \
-			'  -l zh|en   Output language (default from LANG)' \
+			'  -l zh|en   Output language (cn = zh; default from LANG)' \
 			'  -j         JSON output' \
 			'  -o FILE    Also save the output to FILE' \
 			'  -h         Show this help' \
@@ -168,16 +170,46 @@ cell() {
 	if [ "${4-}" != r ]; then printf '%*s' "$pad" ''; fi
 }
 
+# Colours, each the nearest of the 16 basic ANSI colours to the website's own (README "Colours"): pos green, neu yellow,
+# neg red, none bright black (unknown, failed, not provided); a style starting with b is a label on that background.
 paint() {
 	if [ "$COLOR" = 1 ] && [ -n "$1" ] && [ -n "$2" ]; then
 		local code
 		case $1 in
-		pos) code=32 ;; neu) code=33 ;; neg) code=31 ;; dim) code=2 ;; bold) code=1 ;; head) code='1;36' ;; *) code=0 ;;
+		pos) code=32 ;; neu) code=33 ;; neg) code=31 ;; none) code=90 ;; dim) code=2 ;; bold) code=1 ;; head) code='1;94' ;;
+		bpos) code='97;42' ;; bneu) code='30;43' ;; bneg) code='97;41' ;; bnone) code='97;100' ;; *) code=0 ;;
 		esac
 		printf '\033[%sm%s\033[0m' "$code" "$2"
 	else
 		printf '%s' "$2"
 	fi
+}
+
+# A label: the text with a space either side, on the style's background, padded to $2 columns. Without colour the spaces
+# stay, so a label column lines up the same way.
+label() {
+	local text=" $1 " pad
+	pad=$(($2 - $(width "$text")))
+	[ "$pad" -lt 0 ] && pad=0
+	paint "$3" "$text"
+	printf '%*s' "$pad" ''
+}
+
+# A cell whose style says whether it is a label (b...) or text.
+any_cell() {
+	case $3 in b*) label "$1" "$2" "$3" ;; *) cell "$@" ;; esac
+}
+
+# Columns a cell takes: a label is two wider than its text.
+cell_width() {
+	case $2 in b*) printf '%s' $(($(width "$1") + 2)) ;; *) width "$1" ;; esac
+}
+
+# $1 repeated $2 times.
+repeat() {
+	local s
+	printf -v s '%*s' "$2" ''
+	printf '%s' "${s// /$1}"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -277,8 +309,15 @@ failure() {
 	esac
 }
 
-type_tone() {
-	case $1 in ISP) printf pos ;; IDC | Error) printf neg ;; Business) printf neu ;; *) printf dim ;; esac
+# A Professional type's label colour, as the website's multi-source type table shows it: ISP green, IDC and failure red,
+# Business and Unknown (shown as "Other") amber.
+type_style() {
+	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; *) printf bneu ;; esac
+}
+
+# A Quick type (ASN and operator) as the web result card colours it, where Unknown is grey.
+quick_type_style() {
+	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; Business) printf bneu ;; *) printf bnone ;; esac
 }
 
 # A Professional type in the site's words.
@@ -298,8 +337,14 @@ l() {
 	done
 }
 
+# Risk values as the website colours them (the purity track and the multi-source risk numbers): up to 20, up to 50, above.
 risk_tone() {
 	if [ "$1" -le 20 ]; then printf pos; elif [ "$1" -le 50 ]; then printf neu; else printf neg; fi
+}
+
+# Scores as the website's score ring: 80 and up, 60 and up, below.
+score_tone() {
+	if [ "$1" -ge 80 ]; then printf pos; elif [ "$1" -ge 60 ]; then printf neu; else printf neg; fi
 }
 
 # Joins the non-empty arguments with " · ", skipping a part equal to the one before it (a city named like its region).
@@ -314,145 +359,343 @@ joined() {
 	printf '%s' "$out"
 }
 
-render_family() {
-	local family=$1 ip nature property score purity tone name company ctype
-	F=$family
-	ip=$(v ip)
-	printf '%s  %s\n' "$(paint head "IPv$family")" "$(paint bold "$ip")"
-
-	# Ownership and location; the Quick types read as the web result card writes them (ISP, IDC).
-	name=$(v quick.asn.name)
-	printf '  %s\n' "$(joined "AS$(v quick.asn.number)" "$name" "$(v quick.asn.type)")"
-	company=$(v quick.company.name)
-	ctype=$(v quick.company.type)
-	if [ -n "$company" ] && [ "$company" != "$name" ]; then
-		printf '  %s  %s\n' "$(paint dim "$(l operator)")" "$(joined "$company" "$ctype")"
-	fi
-	printf '  %s\n\n' "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")"
-
-	# The Quick result: score, purity risk value (lower is cleaner), then the two property badges without labels, as on the
-	# web result card; each coloured by value.
-	score=$(v quick.score)
-	purity=$(v quick.purity.value)
-	nature=$(v quick.ipNature)
-	property=$(v quick.ipProperty)
-	local line="  "
-	if [ -n "$score" ]; then
-		if [ "$score" -ge 80 ]; then tone=pos; elif [ "$score" -ge 60 ]; then tone=neu; else tone=neg; fi
-		line="$line$(paint dim "$(l score)") $(paint "$tone" "$score")    "
-	fi
-	if [ -n "$purity" ]; then
-		case $(v quick.purity.state) in good) tone=pos ;; average) tone=neu ;; poor) tone=neg ;; *) tone='' ;; esac
-		line="$line$(paint dim "$(l purity)") $(paint dim "$(l purityRisk)") $(paint "$tone" "$purity/100")    "
-	fi
-	case $nature in Native) tone=pos ;; Broadcast) tone=neu ;; Unknown | '') tone=dim ;; *) tone=neg ;; esac
-	line="$line$(paint "$tone" "$(l "nature_${nature:-Unknown}")")$(paint dim "$SEP")"
-	case $property in Residential | HomeBroadband) tone=pos ;; Unknown | '') tone=dim ;; *) tone=neg ;; esac
-	line="$line$(paint "$tone" "$(l "property_${property:-Unknown}")")"
-	printf '%s\n\n' "$line"
-
-	render_sources
-	render_factors
-	printf '  %s  %s\n' "$(paint dim "$(t report)")" "$BASE/$LANG_UI/ip/$ip"
+# The larger of two numbers.
+max() {
+	if [ "$1" -ge "$2" ]; then printf '%s' "$1"; else printf '%s' "$2"; fi
 }
 
-# One row per provider: location, usage and company type, risk score. A row whose every module is out of quota, or
-# failed, says so once.
-render_sources() {
-	local name_w=15 type_w=10 risk_w=6 loc_w provider li ti ri state states loc usage company score level
-	if [ "$COLS" -ge 100 ]; then type_w=12; fi
-	# The risk column is as wide as its heading (the numbers are right-aligned under it).
-	risk_w=$(width "$(l colRiskValue)")
-	[ "$risk_w" -lt 6 ] && risk_w=6
-	loc_w=$((COLS - 2 - name_w - 2 * type_w - risk_w - 2))
-	[ "$loc_w" -gt 44 ] && loc_w=44
+# A 0-100 scale of 20 cells in the website's segment colours, with the value's cell marked: risk values green up to 20,
+# amber up to 50 and red above (the purity track); scores red below 60, amber below 80 and green from 80 (the score ring).
+scale() {
+	local v=$1 i=1 at tone run='' last='' out=''
+	if [ "$2" = score ]; then at=$((v / 5 + 1)); else at=$(((v + 4) / 5)); fi
+	[ "$at" -lt 1 ] && at=1
+	[ "$at" -gt 20 ] && at=20
+	while [ "$i" -le 20 ]; do
+		if [ "$2" = score ]; then
+			if [ "$i" -ge 17 ]; then tone=pos; elif [ "$i" -ge 13 ]; then tone=neu; else tone=neg; fi
+		elif [ "$i" -le 4 ]; then tone=pos
+		elif [ "$i" -le 10 ]; then tone=neu
+		else tone=neg; fi
+		if [ "$i" = "$at" ]; then
+			out=$out$(paint "$last" "$run")$(paint bold "$BAR_AT")
+			run=''
+		else
+			if [ "$tone" != "$last" ] && [ -n "$run" ]; then
+				out=$out$(paint "$last" "$run")
+				run=''
+			fi
+			run=$run$BAR
+		fi
+		last=$tone
+		i=$((i + 1))
+	done
+	printf '%s%s' "$out" "$(paint "$last" "$run")"
+}
 
-	printf '  %s%s%s%s%s\n' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l location)" "$loc_w" dim)" \
-		"$(cell "$(l usageType)" "$type_w" dim)" "$(cell "$(l companyType)" "$type_w" dim)" "$(cell "$(l colRiskValue)" "$risk_w" dim r)"
+# A section heading, numbered in the order shown ("一、" in Chinese, "1." in English); $2 is added after it as given.
+SECTION=0
+section() {
+	local n
+	SECTION=$((SECTION + 1))
+	if [ "$LANG_UI" = zh ]; then
+		case $SECTION in 1) n='一、' ;; 2) n='二、' ;; 3) n='三、' ;; 4) n='四、' ;; 5) n='五、' ;; *) n='六、' ;; esac
+	else
+		n="$SECTION. "
+	fi
+	printf '\n%s%s\n' "$(paint head "$n$1")" "${2-}"
+}
 
-	local list
+# The report header: a bordered title, then the IPs checked, the version and when the result was made.
+render_header() {
+	local inner=$((COLS - 2)) title tw left ips='' family meta made=''
+	title=$(t title)
+	tw=$(width "$title")
+	left=$(((inner - tw) / 2))
+	printf '%s\n' "$(paint head "$BOX_TL$(repeat "$BOX_H" "$inner")$BOX_TR")"
+	printf '%s%*s%s%*s%s\n' "$(paint head "$BOX_V")" "$left" '' "$(paint bold "$title")" $((inner - tw - left)) '' "$(paint head "$BOX_V")"
+	printf '%s\n' "$(paint head "$BOX_BL$(repeat "$BOX_H" "$inner")$BOX_BR")"
+	for family in $RESULTS; do
+		F=$family
+		ips=${ips:+$ips$SEP}$(v ip)
+		[ -z "$made" ] && made=$(v generatedAt)
+	done
+	case $made in
+	[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]*) made="${made:0:10} ${made:11:5} UTC" ;;
+	*) made='' ;;
+	esac
+	meta=$(joined "CLI $VERSION" "$made")
+	if [ -z "$ips" ]; then
+		printf '  %s\n' "$(paint dim "$meta")"
+	elif [ $(($(width "$ips$SEP$meta") + 2)) -le "$COLS" ]; then
+		printf '  %s%s\n' "$(paint bold "$ips")" "$(paint dim "$SEP$meta")"
+	else
+		printf '  %s\n  %s\n' "$(paint bold "$ips")" "$(paint dim "$meta")"
+	fi
+}
+
+# A family that has no result: its reason on one line.
+render_failure() {
+	local family=$1 style text
+	text=FAIL_$family
+	style=FAIL_STYLE_$family
+	printf '  %s  %s\n' "$(paint head "IPv$family")" "$(paint "${!style}" "${!text}")"
+}
+
+# Section one for a family: ownership, location, registration and the two property labels, as the web result card.
+render_basic() {
+	local lw=3 key name company type nature property line nature_style property_style
+	F=$1
+	for key in operator location registration ipProperty; do lw=$(max "$lw" "$(width "$(l "$key")")"); done
+	lw=$((lw + 2))
+	name=$(v quick.asn.name)
+	type=$(v quick.asn.type)
+	line=$(joined "AS$(v quick.asn.number)" "$name")
+	[ -n "$type" ] && line="$line  $(label "$type" 0 "$(quick_type_style "$type")")"
+	printf '  %s%s\n' "$(cell ASN "$lw" dim)" "$line"
+	company=$(v quick.company.name)
+	type=$(v quick.company.type)
+	if [ -n "$company" ] && [ "$company" != "$name" ]; then
+		line=$company
+		[ -n "$type" ] && line="$line  $(label "$type" 0 "$(quick_type_style "$type")")"
+		printf '  %s%s\n' "$(cell "$(l operator)" "$lw" dim)" "$line"
+	fi
+	printf '  %s%s\n' "$(cell "$(l location)" "$lw" dim)" "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")"
+	[ -n "$(v quick.registrationCountryCode)" ] && printf '  %s%s\n' "$(cell "$(l registration)" "$lw" dim)" "$(v quick.registrationCountryCode)"
+	nature=$(v quick.ipNature)
+	property=$(v quick.ipProperty)
+	case $nature in Native) nature_style=bpos ;; Broadcast) nature_style=bneu ;; Unknown | '') nature_style=bnone ;; *) nature_style=bneg ;; esac
+	case $property in Residential | HomeBroadband) property_style=bpos ;; Unknown | '') property_style=bnone ;; *) property_style=bneg ;; esac
+	printf '  %s%s %s\n' "$(cell "$(l ipProperty)" "$lw" dim)" "$(label "$(l "nature_${nature:-Unknown}")" 0 "$nature_style")" \
+		"$(label "$(l "property_${property:-Unknown}")" 0 "$property_style")"
+}
+
+# A provider's state across its modules: Success when any of them succeeded, else QuotaUnavailable or Error.
+provider_state() {
+	local li ti ri states=''
+	li=$(index_of locations "$1")
+	ti=$(index_of types "$1")
+	ri=$(index_of riskSources "$1")
+	[ -n "$li" ] && states="$states $(v "professional.locations.$li.state")"
+	[ -n "$ti" ] && states="$states $(row_type_state "$ti")"
+	[ -n "$ri" ] && states="$states $(row_risk_state "$ri")"
+	case " $states " in *Success*) printf Success ;; *Quota*) printf QuotaUnavailable ;; *) printf Error ;; esac
+}
+
+# A provider none of whose modules answered, named once with the reason (in the first section that lists it), its name in
+# a column $3 wide.
+render_failed_provider() {
+	if [ "$2" = QuotaUnavailable ]; then
+		printf '  %s%s\n' "$(cell "$(brand "$1")" "$3" bold)" "$(paint neu "$(l rowQuota)")"
+	else
+		printf '  %s%s\n' "$(cell "$(brand "$1")" "$3" bold)" "$(paint neg "$(l rowError)")"
+	fi
+}
+
+# A module that did not answer, as text and style in MT and MS.
+module_text() {
+	case $1 in
+	QuotaUnavailable) MT=$(l quotaUnavailable) MS=neu ;;
+	*) MT=$(l error) MS=neg ;;
+	esac
+}
+
+# Sources side by side on one line: a column per source (SB_NAMES), a row per field (SB_HEAD), the cells of field j in the
+# arrays SB_Tj (text) and SB_Sj (style). Returns 1, printing nothing, when they do not fit the width.
+side_by_side() {
+	local np=${#SB_NAMES[@]} nf=${#SB_HEAD[@]} lw i j w ref sref used widths=()
+	lw=$(width "$(l colSource)")
+	j=0
+	while [ "$j" -lt "$nf" ]; do lw=$(max "$lw" "$(width "${SB_HEAD[$j]}")"); j=$((j + 1)); done
+	lw=$((lw + 2))
+	used=$((2 + lw))
+	i=0
+	while [ "$i" -lt "$np" ]; do
+		w=$(width "${SB_NAMES[$i]}")
+		j=0
+		while [ "$j" -lt "$nf" ]; do
+			ref="SB_T${j}[$i]"
+			sref="SB_S${j}[$i]"
+			w=$(max "$w" "$(cell_width "${!ref}" "${!sref}")")
+			j=$((j + 1))
+		done
+		widths[i]=$((w + 2))
+		used=$((used + w + 2))
+		i=$((i + 1))
+	done
+	[ "$used" -le "$COLS" ] || return 1
+	printf '  %s' "$(cell "$(l colSource)" "$lw" dim)"
+	i=0
+	while [ "$i" -lt "$np" ]; do printf '%s' "$(cell "${SB_NAMES[$i]}" "${widths[$i]}" bold)"; i=$((i + 1)); done
+	printf '\n'
+	j=0
+	while [ "$j" -lt "$nf" ]; do
+		printf '  %s' "$(cell "${SB_HEAD[$j]}" "$lw" dim)"
+		i=0
+		while [ "$i" -lt "$np" ]; do
+			ref="SB_T${j}[$i]"
+			sref="SB_S${j}[$i]"
+			printf '%s' "$(GAP=2 any_cell "${!ref}" "${widths[$i]}" "${!sref}")"
+			i=$((i + 1))
+		done
+		printf '\n'
+		j=$((j + 1))
+	done
+}
+
+# Section two for a family: a row per source with its location and its usage and company types as labels, at every width.
+render_types() {
+	local list provider li ti n=0 state name_w loc_w uw cw over key failed='' usage company
+	F=$1
+	SB_NAMES=() SB_T0=() SB_S0=() SB_T1=() SB_S1=() SB_T2=() SB_S2=()
 	IFS=$'\n' read -r -d '' -a list < <(providers)
 	for provider in "${list[@]}"; do
 		li=$(index_of locations "$provider")
 		ti=$(index_of types "$provider")
-		ri=$(index_of riskSources "$provider")
-		states=''
-		[ -n "$li" ] && states="$states $(v "professional.locations.$li.state")"
-		[ -n "$ti" ] && states="$states $(row_type_state "$ti")"
-		[ -n "$ri" ] && states="$states $(row_risk_state "$ri")"
-		printf '  %s' "$(cell "$(brand "$provider")" "$name_w" bold)"
-		case " $states " in
-		*Success*) ;;
-		*Quota*) printf '%s\n' "$(paint neu "$(l rowQuota)")"; continue ;;
-		*Error*) printf '%s\n' "$(paint neg "$(l rowError)")"; continue ;;
-		esac
-
-		# Location: country code, then city (region too when the terminal is wide).
-		loc=''
-		if [ -n "$li" ]; then
-			state=$(v "professional.locations.$li.state")
-			if [ "$state" = Success ]; then
-				if [ "$COLS" -ge 100 ]; then
-					loc=$(joined "$(v "professional.locations.$li.countryCode")" "$(v "professional.locations.$li.region")" "$(v "professional.locations.$li.city")")
-				else
-					loc=$(joined "$(v "professional.locations.$li.countryCode")" "$(v "professional.locations.$li.city")")
-				fi
-				printf '%s' "$(GAP=2 cell "$loc" "$loc_w" '')"
-			else
-				printf '%s' "$(module_cell "$state" "$loc_w")"
-			fi
-		else
-			printf '%s' "$(cell "$MARK_NONE" "$loc_w" dim)"
+		[ -z "$li$ti" ] && continue
+		state=$(provider_state "$provider")
+		if [ "$state" != Success ]; then
+			failed=$failed$provider$'\t'$state$'\n'
+			name_w=$(max "${name_w:-0}" "$(width "$(brand "$provider")")")
+			continue
 		fi
-
-		# Usage and company type.
-		if [ -n "$ti" ] && [ "$(row_type_state "$ti")" = Success ]; then
+		SB_NAMES[n]=$(brand "$provider")
+		name_w=$(max "${name_w:-0}" "$(width "${SB_NAMES[n]}")")
+		if [ -z "$li" ]; then
+			SB_T0[n]=$MARK_NONE SB_S0[n]=none
+		elif [ "$(v "professional.locations.$li.state")" = Success ]; then
+			SB_T0[n]=$(joined "$(v "professional.locations.$li.countryCode")" "$(v "professional.locations.$li.city")") SB_S0[n]=''
+			[ -z "${SB_T0[n]}" ] && SB_T0[n]=$MARK_NONE SB_S0[n]=none
+		else
+			module_text "$(v "professional.locations.$li.state")"
+			SB_T0[n]=$MT SB_S0[n]=$MS
+		fi
+		# A module that did not answer is said once, in the usage cell.
+		if [ -z "$ti" ]; then
+			SB_T1[n]=" $MARK_NONE" SB_S1[n]=none SB_T2[n]=" $MARK_NONE" SB_S2[n]=none
+		elif [ "$(row_type_state "$ti")" = Success ]; then
 			usage=$(v "professional.types.$ti.usageType")
 			company=$(v "professional.types.$ti.companyType")
-			printf '%s' "$(cell "$(type_text "$usage")" "$type_w" "$(type_tone "$usage")")"
-			if [ -n "$company" ]; then
-				printf '%s' "$(cell "$(type_text "$company")" "$type_w" "$(type_tone "$company")")"
-			else
-				printf '%s' "$(cell "$MARK_NONE" "$type_w" dim)"
-			fi
-		elif [ -n "$ti" ]; then
-			printf '%s' "$(module_cell "$(row_type_state "$ti")" $((2 * type_w)))"
+			SB_T1[n]=$(type_text "$usage") SB_S1[n]=$(type_style "$usage")
+			if [ -n "$company" ]; then SB_T2[n]=$(type_text "$company") SB_S2[n]=$(type_style "$company"); else SB_T2[n]=" $MARK_NONE" SB_S2[n]=none; fi
 		else
-			printf '%s%s' "$(cell "$MARK_NONE" "$type_w" dim)" "$(cell "$MARK_NONE" "$type_w" dim)"
+			module_text "$(row_type_state "$ti")"
+			SB_T1[n]=$MT SB_S1[n]=$MS SB_T2[n]='' SB_S2[n]=''
 		fi
+		n=$((n + 1))
+	done
+	# Each column is as wide as its widest content and two spaces; the type headings start where the label text does.
+	name_w=$(($(max "${name_w:-0}" "$(width "$(l colSource)")") + 2))
+	if [ "$n" -gt 0 ]; then
+		loc_w=$(width "$(l location)")
+		uw=$(($(width "$(l usageType)") + 1))
+		cw=$(($(width "$(l companyType)") + 1))
+		key=0
+		while [ "$key" -lt "$n" ]; do
+			loc_w=$(max "$loc_w" "$(width "${SB_T0[$key]}")")
+			case ${SB_S1[$key]} in
+			b* | none)
+				uw=$(max "$uw" "$(cell_width "${SB_T1[$key]}" "${SB_S1[$key]}")")
+				cw=$(max "$cw" "$(cell_width "${SB_T2[$key]}" "${SB_S2[$key]}")")
+				;;
+			esac
+			key=$((key + 1))
+		done
+		loc_w=$((loc_w + 2)) uw=$((uw + 2)) cw=$((cw + 2))
+		# Within the terminal: a location too long for the room left is cut.
+		over=$((2 + name_w + loc_w + uw + cw - COLS))
+		[ "$over" -gt 0 ] && loc_w=$((loc_w - over))
+		printf '  %s%s%s%s\n' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l location)" "$loc_w" dim)" "$(cell " $(l usageType)" "$uw" dim)" \
+			"$(cell " $(l companyType)" "$cw" dim)"
+		key=0
+		while [ "$key" -lt "$n" ]; do
+			printf '  %s%s' "$(cell "${SB_NAMES[$key]}" "$name_w" bold)" "$(GAP=2 any_cell "${SB_T0[$key]}" "$loc_w" "${SB_S0[$key]}")"
+			case ${SB_S1[$key]} in
+			b* | none) printf '%s%s\n' "$(any_cell "${SB_T1[$key]}" "$uw" "${SB_S1[$key]}")" "$(any_cell "${SB_T2[$key]}" "$cw" "${SB_S2[$key]}")" ;;
+			*) printf '%s\n' "$(paint "${SB_S1[$key]}" "${SB_T1[$key]}")" ;;
+			esac
+			key=$((key + 1))
+		done
+	fi
+	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$name_w"; done
+}
 
-		# Risk score: the number, or the provider's level when it gives no number.
-		if [ -n "$ri" ] && [ "$(row_risk_state "$ri")" = Success ]; then
-			score=$(v "professional.riskSources.$ri.score.value")
+# Section three for a family: the IPLense score and purity risk value on their scales, then each source's risk value
+# coloured by the same thresholds: side by side when they fit on one line, else a row per source.
+render_risk() {
+	local lw vw score purity tone level list provider li ti ri n=0 state value key
+	F=$1
+	score=$(v quick.score)
+	purity=$(v quick.purity.value)
+	lw=$(max 15 "$(width "IPLense $(l score)")")
+	lw=$(max "$lw" "$(width "$(l purity) $(l purityRisk)")")
+	lw=$((lw + 2))
+	vw=$(max 6 "$(width "$(l colRiskValue)")")
+	if [ -n "$score" ]; then
+		printf '  %s%s  %s\n' "$(cell "IPLense $(l score)" "$lw" dim)" "$(cell "$score" "$vw" "$(score_tone "$score")" r)" "$(scale "$score" score)"
+	fi
+	if [ -n "$purity" ]; then
+		case $(v quick.purity.state) in good) tone=pos level=low ;; average) tone=neu level=medium ;; *) tone=neg level=high ;; esac
+		printf '  %s%s  %s  %s\n' "$(cell "$(l purity) $(l purityRisk)" "$lw" dim)" "$(cell "$purity/100" "$vw" "$tone" r)" \
+			"$(scale "$purity" risk)" "$(paint "$tone" "$(l "level_$level")")"
+	fi
+
+	SB_NAMES=() SB_T0=() SB_S0=()
+	local failed=''
+	IFS=$'\n' read -r -d '' -a list < <(providers)
+	for provider in "${list[@]}"; do
+		ri=$(index_of riskSources "$provider")
+		[ -z "$ri" ] && continue
+		state=$(provider_state "$provider")
+		if [ "$state" != Success ]; then
+			# Named in section two when it has a location or type there.
+			li=$(index_of locations "$provider")
+			ti=$(index_of types "$provider")
+			[ -z "$li$ti" ] && failed=$failed$provider$'\t'$state$'\n'
+			continue
+		fi
+		SB_NAMES[n]=$(brand "$provider")
+		if [ "$(row_risk_state "$ri")" = Success ]; then
+			value=$(v "professional.riskSources.$ri.score.value")
 			level=$(v "professional.riskSources.$ri.score.level")
-			if [ -n "$score" ]; then
-				score=${score%%.*}
-				printf '%s' "$(cell "$score" "$risk_w" "$(risk_tone "$score")" r)"
+			if [ -n "$value" ]; then
+				value=${value%%.*}
+				SB_T0[n]=$value SB_S0[n]=$(risk_tone "$value")
 			elif [ -n "$level" ]; then
 				level=$(printf '%s' "$level" | tr '[:upper:]' '[:lower:]')
 				case $level in low) tone=pos ;; medium) tone=neu ;; *) tone=neg ;; esac
-				printf '%s' "$(cell "$(l "level_$level")" "$risk_w" "$tone" r)"
+				SB_T0[n]=$(l "level_$level") SB_S0[n]=$tone
 			else
-				printf '%s' "$(cell "$MARK_NONE" "$risk_w" dim r)"
+				SB_T0[n]=$MARK_NONE SB_S0[n]=none
 			fi
-		elif [ -n "$ri" ]; then
-			printf '%s' "$(module_cell "$(row_risk_state "$ri")" "$risk_w" r)"
 		else
-			printf '%s' "$(cell "$MARK_NONE" "$risk_w" dim r)"
+			module_text "$(row_risk_state "$ri")"
+			SB_T0[n]=$MT SB_S0[n]=$MS
 		fi
-		printf '\n'
+		n=$((n + 1))
 	done
+	[ "$n" -gt 0 ] || [ -n "$failed" ] || return 0
 	printf '\n'
+	SB_HEAD=("$(l colRiskValue)")
+	if [ "$n" -gt 0 ] && side_by_side; then
+		:
+	elif [ "$n" -gt 0 ]; then
+		printf '  %s%s\n' "$(cell "$(l colSource)" "$lw" dim)" "$(cell "$(l colRiskValue)" "$vw" dim r)"
+		key=0
+		while [ "$key" -lt "$n" ]; do
+			# A module that did not answer says so in full after the name.
+			case ${SB_S0[$key]} in
+			neu | neg) [ "$(width "${SB_T0[$key]}")" -gt "$vw" ] && value=$(paint "${SB_S0[$key]}" "${SB_T0[$key]}") || value=$(cell "${SB_T0[$key]}" "$vw" "${SB_S0[$key]}" r) ;;
+			*) value=$(cell "${SB_T0[$key]}" "$vw" "${SB_S0[$key]}" r) ;;
+			esac
+			printf '  %s%s\n' "$(cell "${SB_NAMES[$key]}" "$lw" bold)" "$value"
+			key=$((key + 1))
+		done
+	fi
+	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$lw"; done
 }
 
-module_cell() {
-	case $1 in
-	QuotaUnavailable) cell "$(l quotaUnavailable)" "$2" neu "${3-}" ;;
-	*) cell "$(l error)" "$2" neg "${3-}" ;;
-	esac
-}
-
-# A type row's state: quota or failure in either field stands for the whole row (as on the web).
+# A module state of a type row: quota or failure in either field stands for the whole row (as on the web).
 row_type_state() {
 	local all
 	all="$(v "professional.types.$1.state") $(v "professional.types.$1.usageState") $(v "professional.types.$1.companyState")"
@@ -489,9 +732,10 @@ risk_mark() {
 	printf '%s' "$found"
 }
 
+# Section four for a family: the matrix, its marks red (detected), green (not detected) and grey (not provided).
 render_factors() {
-	local name_w=15 col_w=8 provider ri column mark list names=() rows=() n
-	[ "$LANG_UI" = zh ] && col_w=7
+	local name_w provider ri column mark list names=() rows=() n signals widths=() c
+	F=$1
 	IFS=$'\n' read -r -d '' -a list < <(providers)
 	for provider in "${list[@]}"; do
 		ri=$(index_of riskSources "$provider")
@@ -502,26 +746,105 @@ render_factors() {
 		rows[${#rows[@]}]=$ri
 	done
 	[ "${#rows[@]}" -eq 0 ] && return
-	printf '  %s' "$(cell "$(l statRiskHits)" "$name_w" dim)"
-	for column in $COLUMNS_RISK; do printf '%s' "$(cell "$(l "column_${column%%:*}")" "$col_w" dim)"; done
+	# Each column is as wide as its heading or widest name and two spaces (a mark is one column).
+	name_w=$(width "$(l colSource)")
+	n=0
+	while [ "$n" -lt "${#names[@]}" ]; do name_w=$(max "$name_w" "$(width "$(brand "${names[$n]}")")"); n=$((n + 1)); done
+	name_w=$((name_w + 2))
+	printf '  %s' "$(cell "$(l colSource)" "$name_w" dim)"
+	c=0
+	for column in $COLUMNS_RISK; do
+		widths[c]=$(($(width "$(l "column_${column%%:*}")") + 2))
+		printf '%s' "$(cell "$(l "column_${column%%:*}")" "${widths[c]}" dim)"
+		c=$((c + 1))
+	done
 	printf '\n'
 	n=0
 	while [ "$n" -lt "${#rows[@]}" ]; do
 		printf '  %s' "$(cell "$(brand "${names[$n]}")" "$name_w" bold)"
 		signals=$(signal_states "${rows[$n]}")
+		c=0
 		for column in $COLUMNS_RISK; do
 			mark=$(risk_mark "$signals" "${column#*:}")
 			case $mark in
-			detected) printf '%s' "$(cell "$MARK_HIT" "$col_w" neg)" ;;
-			clear) printf '%s' "$(cell "$MARK_CLEAR" "$col_w" pos)" ;;
-			*) printf '%s' "$(cell "$MARK_NONE" "$col_w" dim)" ;;
+			detected) printf '%s' "$(cell "$MARK_HIT" "${widths[c]}" neg)" ;;
+			clear) printf '%s' "$(cell "$MARK_CLEAR" "${widths[c]}" pos)" ;;
+			*) printf '%s' "$(cell "$MARK_NONE" "${widths[c]}" none)" ;;
 			esac
+			c=$((c + 1))
 		done
 		printf '\n'
 		n=$((n + 1))
 	done
-	printf '  %s %s  %s %s  %s %s\n\n' "$(paint neg "$MARK_HIT")" "$(l cell_detected)" "$(paint pos "$MARK_CLEAR")" "$(l cell_clear)" \
-		"$(paint dim "$MARK_NONE")" "$(l cell_none)"
+}
+
+# The matrix's legend, once under every family's matrix.
+render_legend() {
+	printf '  %s %s  %s %s  %s %s\n' "$(paint neg "$MARK_HIT")" "$(l cell_detected)" "$(paint pos "$MARK_CLEAR")" "$(l cell_clear)" \
+		"$(paint none "$MARK_NONE")" "$(l cell_none)"
+}
+
+# The whole report. Sections one to four need a result from at least one family; five and six need the local checks.
+render_report() {
+	local family count=0 block blocks out
+	for family in $RESULTS; do count=$((count + 1)); done
+	render_header
+	if [ "$count" -gt 0 ]; then
+		F=${RESULTS# }
+		F=${F%% *}
+		section "$(l sectionBasic)"
+		for family in $FAMILIES; do
+			case " $RESULTS " in
+			*" $family "*)
+				if [ "$FAMILIES" != "$family" ]; then
+					[ "$family" != "${FAMILIES%% *}" ] && printf '\n'
+					printf '  %s\n' "$(paint bold "IPv$family")"
+				fi
+				render_basic "$family"
+				;;
+			*)
+				[ "$family" != "${FAMILIES%% *}" ] && printf '\n'
+				render_failure "$family"
+				;;
+			esac
+		done
+		for block in types risk factors; do
+			blocks=''
+			for family in $RESULTS; do
+				F=$family
+				out=$("render_$block" "$family")
+				[ -z "$out" ] && continue
+				[ "$count" -gt 1 ] && out="  $(paint bold "IPv$family")"$'\n'$out
+				blocks=${blocks:+$blocks$'\n\n'}$out
+			done
+			[ -z "$blocks" ] && continue
+			F=${RESULTS# }
+			F=${F%% *}
+			case $block in types) section "$(l sectionTypes)" ;; risk) section "$(l sectionRisk)" ;; factors) section "$(l statRiskHits)" ;; esac
+			printf '%s\n' "$blocks"
+			[ "$block" = factors ] && render_legend
+		done
+	else
+		printf '\n'
+		for family in $FAMILIES; do render_failure "$family"; done
+	fi
+	[ -n "$LOCAL_FAMILY" ] && render_local
+	render_footer
+}
+
+# A rule, then the full result for each family checked and the CLI page, one line each.
+render_footer() {
+	local lw family label
+	lw=$(max "$(width "$(t report)")" "$(width "$(t cli_page)")")
+	lw=$((lw + 2))
+	printf '\n%s\n' "$(paint dim "$(repeat "$BOX_H" "$COLS")")"
+	label=$(t report)
+	for family in $RESULTS; do
+		F=$family
+		printf '  %s%s\n' "$(cell "$label" "$lw" dim)" "$BASE/$LANG_UI/ip/$(v ip)"
+		label=''
+	done
+	printf '  %s%s\n' "$(cell "$(t cli_page)" "$lw" dim)" "$BASE/$LANG_UI/cli"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -763,28 +1086,44 @@ split_result() {
 }
 
 render_local() {
-	local row tone name_w=18 status_w=0 w IFS=$'\n'
+	local row style name_w=0 status_w=0 w IFS=$'\n' suffix port25='' differs=0
 	set -f
-	# The status column is as wide as its longest word.
+	# The name and status columns fit their longest content (a status label is two wider than its word).
 	for row in $LOCAL_RESULTS; do
 		split_result "$row"
+		[ "$KEY" = port25 ] && continue
 		w=$(width "$(local_status "$STATUS")")
 		[ "$w" -gt "$status_w" ] && status_w=$w
+		name_w=$(max "$name_w" "$(width "$(local_name "$KEY")")")
 	done
-	status_w=$((status_w + 2))
+	status_w=$((status_w + 4))
+	name_w=$((name_w + 2))
 	# When the platforms leave through another exit than the IP checked above (split routing), the title names it.
-	if [ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ]; then
-		printf '%s%s\n' "$(paint head "$(t local_title)")" "$(paint dim "${SEP}IPv$LOCAL_FAMILY${SEP}$(tf local_exit "$LOCAL_EXIT")")"
-		printf '  %s\n' "$(paint dim "$(t local_exit_note)")"
-	else
-		printf '%s%s\n' "$(paint head "$(t local_title)")" "$(paint dim "${SEP}IPv$LOCAL_FAMILY")"
-	fi
+	[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=1
+	suffix="${SEP}IPv$LOCAL_FAMILY"
+	[ "$differs" = 1 ] && suffix="$suffix${SEP}$(tf local_exit "$LOCAL_EXIT")"
+	section "$(t platforms)" "$(paint dim "$suffix")"
+	[ "$differs" = 1 ] && printf '  %s\n' "$(paint dim "$(t local_exit_note)")"
 	for row in $LOCAL_RESULTS; do
 		split_result "$row"
-		case $STATUS in available | supported) tone=pos ;; unavailable | unsupported) tone=neg ;; originals_only) tone=neu ;; *) tone=dim ;; esac
-		printf '  %s%s%s\n' "$(cell "$(local_name "$KEY")" "$name_w" bold)" "$(cell "$(local_status "$STATUS")" "$status_w" "$tone")" "$REGION"
+		style=$(local_style "$STATUS")
+		if [ "$KEY" = port25 ]; then
+			port25=$(label "$(local_status "$STATUS")" 0 "$style")
+		elif [ "$STATUS" = region ]; then
+			printf '  %s%s%s\n' "$(cell "$(local_name "$KEY")" "$name_w" bold)" "$(cell " $MARK_NONE" "$status_w" none)" "$REGION"
+		else
+			printf '  %s%s%s\n' "$(cell "$(local_name "$KEY")" "$name_w" bold)" "$(label "$(local_status "$STATUS")" "$status_w" "$style")" "$REGION"
+		fi
 	done
 	set +f
+	section "$(t port25)"
+	printf '  %s\n' "$port25"
+}
+
+# A local check's label colour, as the website shows platform access: available green, unavailable red, partial amber,
+# failed grey.
+local_style() {
+	case $1 in available | supported) printf bpos ;; unavailable | unsupported) printf bneg ;; originals_only) printf bneu ;; *) printf bnone ;; esac
 }
 
 local_status() {
@@ -810,6 +1149,11 @@ local_json() {
 # ---------------------------------------------------------------------------------------------------------------------
 # Main
 
+# Whether the output goes to a terminal: colour and the terminal's width are used only then.
+on_terminal() {
+	[ -t 1 ]
+}
+
 main() {
 	local opt
 	case ${LC_ALL:-${LC_MESSAGES:-${LANG:-}}} in zh* | ZH*) LANG_UI=zh ;; esac
@@ -831,9 +1175,9 @@ main() {
 	fi
 
 	COLOR=0
-	if [ -t 1 ] && [ -z "${NO_COLOR-}" ] && [ "${TERM-}" != dumb ]; then COLOR=1; fi
+	if on_terminal && [ -z "${NO_COLOR-}" ] && [ "${TERM-}" != dumb ]; then COLOR=1; fi
 	COLS=80
-	if [ -t 1 ]; then
+	if on_terminal; then
 		COLS=${COLUMNS:-$(tput cols 2>/dev/null || printf 80)}
 		case $COLS in '' | *[!0-9]*) COLS=80 ;; esac
 	elif [ -n "${COLUMNS-}" ]; then
@@ -842,13 +1186,20 @@ main() {
 	[ "$COLS" -lt 72 ] && COLS=72
 	[ "$COLS" -gt 120 ] && COLS=120
 	case ${LC_ALL:-${LC_CTYPE:-${LANG:-}}} in
-	*UTF-8* | *utf8* | *UTF8* | *utf-8*) MARK_HIT='●' MARK_CLEAR='·' MARK_NONE='–' SEP=' · ' ELLIPSIS='…' ;;
-	*) MARK_HIT='x' MARK_CLEAR='.' MARK_NONE='-' SEP=' / ' ELLIPSIS='...' ;;
+	*UTF-8* | *utf8* | *UTF8* | *utf-8*)
+		MARK_HIT='●' MARK_CLEAR='·' MARK_NONE='–' SEP=' · ' ELLIPSIS='…'
+		BOX_TL='┌' BOX_TR='┐' BOX_BL='└' BOX_BR='┘' BOX_H='─' BOX_V='│' BAR='━' BAR_AT='┃'
+		;;
+	*)
+		MARK_HIT='x' MARK_CLEAR='.' MARK_NONE='-' SEP=' / ' ELLIPSIS='...'
+		BOX_TL='+' BOX_TR='+' BOX_BL='+' BOX_BR='+' BOX_H='-' BOX_V='|' BAR='=' BAR_AT='|'
+		;;
 	esac
 
-	local family format ok=0 reached=0 json_parts='' text='' status_line re
+	local family format ok=0 reached=0 json_parts='' re
 	LOCAL_FAMILY=
 	CHECKED_IP=
+	RESULTS=
 	format=kv
 	[ "$JSON" = 1 ] && format=json
 	for family in $FAMILIES; do
@@ -870,53 +1221,50 @@ main() {
 			[ "$STATUS" = 200 ] && ok=1
 			continue
 		fi
+		# A family without a result keeps its reason in FAIL_<family> and the reason's colour in FAIL_STYLE_<family>.
+		printf -v "FAIL_STYLE_$family" '%s' neu
 		if [ -z "$STATUS" ]; then
-			text=$text$(printf '%s  %s' "$(paint head "IPv$family")" "$(paint dim "$(t no_conn)")")$'\n\n'
+			printf -v "FAIL_$family" '%s' "$(t no_conn)"
+			printf -v "FAIL_STYLE_$family" '%s' dim
 			continue
 		fi
 		parse_kv "$family" "$BODY"
 		F=$family
 		if [ "$(v schema)" != "$SCHEMA" ]; then
-			status_line=$(t schema)
+			printf -v "FAIL_$family" '%s' "$(t schema)"
 		elif [ "$(v error)" = family_mismatch ]; then
-			# A proxy carried this family's request out over the other one; the server answers without counting it.
-			status_line=$(tf other_family "$family" "$(v arrivedFamily)" "$(v ip)")
-			text=$text$(printf '%s  %s' "$(paint head "IPv$family")" "$(paint dim "$status_line")")$'\n\n'
-			continue
+			# A proxy carried this family's request out over the other one; the server answers without counting it. The address
+			# it arrived from is named unless the header already shows it (the other family's own result).
+			if [ -n "$CHECKED_IP" ] && [ "$(v ip)" = "$CHECKED_IP" ]; then
+				printf -v "FAIL_$family" '%s' "$(tf other_family_shown "$family" "$(v arrivedFamily)")"
+			else
+				printf -v "FAIL_$family" '%s' "$(tf other_family "$family" "$(v arrivedFamily)" "$(v ip)")"
+			fi
+			printf -v "FAIL_STYLE_$family" '%s' dim
 		elif [ "$STATUS" != 200 ]; then
-			status_line=$(failure "$STATUS")
+			printf -v "FAIL_$family" '%s' "$(failure "$STATUS")"
 		else
-			text=$text$(render_family "$family")$'\n\n'
+			RESULTS="$RESULTS $family"
 			[ "$family" = "$LOCAL_FAMILY" ] && CHECKED_IP=$(v ip)
 			ok=1
-			continue
 		fi
-		text=$text$(printf '%s  %s' "$(paint head "IPv$family")" "$(paint neu "$status_line")")$'\n\n'
 	done
 
-	if [ -n "$LOCAL_FAMILY" ]; then
-		run_local
-		if [ "$JSON" = 1 ]; then
-			json_parts="$json_parts,\"local\":$(local_json)"
-		else
-			text=$text$(render_local)$'\n'
-		fi
-	fi
-
+	[ -n "$LOCAL_FAMILY" ] && run_local
 	local output
 	if [ "$JSON" = 1 ]; then
+		[ -n "$LOCAL_FAMILY" ] && json_parts="$json_parts,\"local\":$(local_json)"
 		output="{\"cli\":\"$VERSION\"$json_parts}"
 	else
-		output="$(paint bold "$(t title)")  $(paint dim "$VERSION")"$'\n\n'$text
-		output=${output%$'\n'}
+		output=$(render_report)
 	fi
 	# Cells are padded to their width; the last one leaves trailing spaces behind.
 	output=$(printf '%s\n' "$output" | sed 's/ *$//')
 	printf '%s\n' "$output"
 	if [ -n "$OUT" ]; then
-		# The saved copy carries no colour codes.
+		# The saved copy carries no colour codes (nor the spaces a label leaves at the end of a line).
 		local LC_ALL=C plain=$output
-		plain=$(printf '%s' "$plain" | sed $'s/\033\\[[0-9;]*m//g')
+		plain=$(printf '%s' "$plain" | sed -e $'s/\033\\[[0-9;]*m//g' -e 's/ *$//')
 		if printf '%s\n' "$plain" >"$OUT"; then
 			printf '%s\n' "$(tf saved "$OUT")" >&2
 		else

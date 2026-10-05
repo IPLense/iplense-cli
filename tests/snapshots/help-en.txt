@@ -3,7 +3,7 @@ IPLense self-check: ownership, type and multi-source risk of this machine's publ
 Usage: bash <(curl -sL https://iplense.cc/cli) [options]
   -4         IPv4 only
   -6         IPv6 only
-  -l zh|en   Output language (default from LANG)
+  -l zh|en   Output language (cn = zh; default from LANG)
   -j         JSON output
   -o FILE    Also save the output to FILE
   -h         Show this help

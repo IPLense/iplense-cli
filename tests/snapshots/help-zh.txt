@@ -3,7 +3,7 @@ IPLense 自检：检测本机出口 IP 的归属、类型与多源风险，以�
 用法：bash <(curl -sL https://iplense.cc/cli) [选项]
   -4         只检测 IPv4
   -6         只检测 IPv6
-  -l zh|en   输出语言（默认按 LANG）
+  -l zh|en   输出语言（cn 同 zh；默认按 LANG）
   -j         输出 JSON
   -o 文件    同时把输出保存到文件
   -h         显示本帮助

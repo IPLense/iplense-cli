@@ -16,8 +16,10 @@ failed=0 passed=0
 # The script is loaded without its last line (main "$@") so the port 25 connection can be answered by STUB_SMTP
 # ("220", "silent" or anything else for a refused connection); every other request goes to the stub curl.
 # shellcheck disable=SC2016 # expanded by the inner bash, not here.
+# STUB_TTY=1 has the script write as it does to a terminal (colour, and COLUMNS as the width).
 HARNESS='eval "$(sed "\$d" "$0")"
 smtp_greeting() { case ${STUB_SMTP-} in 220) printf "220 mx.example ESMTP" ;; silent) return 2 ;; *) return 1 ;; esac; }
+on_terminal() { [ "${STUB_TTY-}" = 1 ]; }
 main "$@"'
 
 # run NAME "ENV=VALUE ..." ARGS... : runs the script with that environment, compares stdout+stderr and the exit code.
@@ -83,6 +85,11 @@ for lang in en zh; do
 done
 run "lang-flag-overrides-env" "LANG=en_US.UTF-8 STUB_V4=full-v4.kv:200" -l zh -4
 check "the language is asked of the server" logged "lang=zh"
+# -l cn is the same as -l zh.
+run "lang-cn-alias" "LANG=en_US.UTF-8 STUB_V4=full-v4.kv:200" -l cn -4
+same_as_zh() { [ "$(cat tests/snapshots/lang-cn-alias.txt)" = "$(cat tests/snapshots/lang-flag-overrides-env.txt)" ]; }
+check "-l cn prints what -l zh does" same_as_zh
+check "-l cn asks the server for zh" logged "lang=zh"
 run "ascii-marks-without-utf8" "LANG=C STUB_V4=full-v4.kv:200" -4
 
 # Exit codes: a result from either family is success; no result at all is failure.
@@ -95,7 +102,7 @@ check "exit code 1 with none" exits_with 1
 run "flag-4" "STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200" -4
 check "-4 makes one IPv4 request" one_request 4 6
 check "client header sent" logged "X-IPLense-CLI: 1"
-check "User-Agent sent" logged "IPLense-CLI/1.0.0"
+check "User-Agent sent" logged "IPLense-CLI/$(sed -n 's/^VERSION=//p' iplense.sh)"
 run "flag-6" "STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200" -6
 check "-6 makes one IPv6 request" one_request 6 4
 
@@ -121,18 +128,34 @@ for lang in en zh; do
 done
 # The website's example (iplense.cc/{zh,en}/cli shows these files): IPv4 with local checks at 120 columns, from a fixture equal
 # to full-v4.kv but with a city short enough that no cell is cut; the example must show no ellipsis.
-for lang in en zh; do run "$lang-120-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=120 STUB_V4=page-v4.kv:200" -4; done
+# Phones (below 767px) show the 80-column example, wider screens the 120-column one.
+for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=page-v4.kv:200" -4; done; done
 no_ellipsis() { ! grep -q '…' "tests/snapshots/$1.txt"; }
-check "the page example has no cut cell (en)" no_ellipsis en-120-page-example
-check "the page example has no cut cell (zh)" no_ellipsis zh-120-page-example
+for name in en-80 zh-80 en-120 zh-120; do check "the page example has no cut cell ($name)" no_ellipsis "$name-page-example"; done
+# The page shows the example in colour (from these snapshots, as a terminal shows them); without its colour codes and the
+# spaces a label leaves at a line end, each is the plain example.
+for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example-color" "LANG=${lang}_US.UTF-8 COLUMNS=$cols TERM=xterm STUB_TTY=1 STUB_V4=page-v4.kv:200" -4; done; done
+plain_of_color() { [ "$(LC_ALL=C sed -e "s/$(printf '\033')\[[0-9;]*m//g" -e 's/ *$//' "tests/snapshots/$1-page-example-color.txt")" = "$(cat "tests/snapshots/$1-page-example.txt")" ]; }
+has_color() { LC_ALL=C grep -q "$(printf '\033')\[97;42m" "tests/snapshots/$1-page-example-color.txt"; }
+for name in en-80 zh-80 en-120 zh-120; do
+	check "the coloured example is the plain one ($name)" plain_of_color "$name"
+	check "the coloured example has labels ($name)" has_color "$name"
+done
+# NO_COLOR and -o stay plain on a terminal; so does the output when it is not a terminal (every other snapshot).
+run "no-color-on-terminal" "TERM=xterm STUB_TTY=1 NO_COLOR=1 STUB_V4=full-v4.kv:200" -4
+check "NO_COLOR: no escape codes" no_controls
 gemini_region() { grep -q "^  Gemini  *[^ ].*  $1\$" "tests/snapshots/$2.txt"; }
 check "Gemini CAN is shown as CA" gemini_region CA en-local-available
 check "an unknown three-letter code is shown as it is" gemini_region XQZ zh-local-mixed
 # A proxy that carries the IPv6 request out over IPv4: the IPv6 line says so instead of repeating the IPv4 result.
 for lang in en zh; do run "$lang-family-mismatch-line" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_V6=family-mismatch.kv:200"; done
+# The address it arrived from is named only when the header does not show it already (no IPv4 result here).
+run "family-mismatch-without-result" "STUB_V4=limit-ip.kv:429 STUB_V6=family-mismatch.kv:200"
+names_address() { grep -q 'arrived over IPv4 (203.0.113.45)$' tests/snapshots/family-mismatch-without-result.txt; }
+check "the mismatch line names the address when nothing else does" names_address
 check "each request names its family" logged "X-IPLense-Family: 4"
 # The exit the AI traces see: named under the title when it is not the IP checked above, silent when it is.
-grep -q "^Local checks · IPv4$" tests/snapshots/en-local-available.txt
+grep -q "AI and streaming · IPv4$" tests/snapshots/en-local-available.txt
 check "same exit: the title stays as it is" test $? -eq 0
 for lang in en zh; do run "$lang-local-exit-differs" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_LOCAL=exit-differs" -4; done
 run "local-v6-exit-differs" "STUB_V6=full-v6.kv:200 STUB_LOCAL=exit-differs" -6

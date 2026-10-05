@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+Output redesign.
+
+- A report with a bordered header (the IPs, the version and when the result was made) and numbered sections: basics, multi-source IP types, risk scores, risk factors, AI and streaming, outbound port 25; links to the full result and the CLI page at the end.
+- Types, levels and check results are coloured labels, and the IPLense score and purity risk value have a 20-cell scale, all in the website's colours mapped to the 16 basic ANSI colours (README "Colours").
+- Each source's risk value stands side by side with the others when they fit on one line.
+- `-l cn` is the same as `-l zh`.
+- The self-check sends five more words (section titles, registration region, IP property); every key 1.0.0 reads is unchanged, so 1.0.0 keeps working.
+
 ## 1.0.0
 
 First release.
