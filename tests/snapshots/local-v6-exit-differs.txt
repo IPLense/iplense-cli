@@ -1,13 +1,14 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  2001:db8:4860:1234:5678:9abc:def0:1 · CLI 1.1.1 · 2026-10-05 01:00 UTC
+  2001:db8:4860:*:*:*:*:* · CLI 1.2.0 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64501 · Beispiel Telekom   ISP
   Operator       Beispiel Telekom AG   ISP
   Location       Germany · Bavaria · München
-  Registered in  DE
+  Registered in  DE · RIPE NCC
+  ASN traffic    Human 82%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18%
   IP Property     Native   Residential
 
 2. Multi-source IP Types
@@ -16,36 +17,32 @@
   ipapi.is  DE · Nürnberg   ISP     ISP
   IPinfo    DE · München    ISP     –
 
-3. Risk scores
+3. Risk scores and factors
   IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━  Excellent
   IP Purity Risk value       4/100  ┃━━━━━━━━━━━━━━━━━━━  Low
 
-  Source      IPLocate  ipapi.is
-  Risk value  0         0
-
-4. Risk factors
-  Source    Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
-  IPLocate  ·        ·      ·    ·    –      ·      –
-  ipapi.is  ·        ·      ·    ·    –      ·      –
+  Source    Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate  0           ·        ·      ·    ·    –      ·      –
+  ipapi.is  0           ·        ·      ·    ·    –      ·      –
   ● Detected  · Not detected  – Not provided
 
-5. AI and streaming · IPv6 · exit 2001:db8::7
+4. AI and streaming
+  exit 2001:db8:0:*:*:*:*:*
   Differs from the IP checked above; the platforms see this exit
-  ChatGPT           Supported region   CA
-  Claude            Supported region   CA
-  Gemini            Check failed
-  Netflix           Check failed
-  Disney+           Check failed
-  YouTube Premium   Check failed
-  TikTok            Check failed
-  Prime Video       Check failed
-  Reddit            Check failed
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Check failed
+  Region  CA                CA
 
-6. Outbound port 25
+          Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  Status  Check    Check    Check failed     Check   Check        Check
+          failed   failed                    failed  failed       failed
+  Region
+
+5. Outbound port 25
    Available
 
 ────────────────────────────────────────────────────────────────────────────────
-  Full result    https://iplense.cc/en/ip/2001:db8:4860:1234:5678:9abc:def0:1
+  Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
   About the CLI  https://iplense.cc/en/cli
 
 [exit 0]

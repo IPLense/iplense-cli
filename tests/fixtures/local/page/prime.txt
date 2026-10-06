@@ -1,0 +1,2 @@
+200 https://www.primevideo.com/offers/nonprimehomepage
+<html>{"currentTerritory":"JP"}</html>

@@ -1,0 +1,2 @@
+400 https://disney.api.edge.bamgrid.com/graph/v1/device/graphql
+{"errors":[{"message":"Registration failed"}]}

@@ -18,7 +18,10 @@ failed=0 passed=0
 # shellcheck disable=SC2016 # expanded by the inner bash, not here.
 # STUB_TTY=1 has the script write as it does to a terminal (colour, and COLUMNS as the width).
 HARNESS='eval "$(sed "\$d" "$0")"
-smtp_greeting() { case ${STUB_SMTP-} in 220) printf "220 mx.example ESMTP" ;; silent) return 2 ;; *) return 1 ;; esac; }
+has_net_redirections() { [ "${STUB_SMTP-}" != unsupported ]; }
+smtp_address() { [ "${STUB_SMTP-}" != dns ] && printf 192.0.2.25; }
+reverse_dns() { printf "host-203-0-113-45.example.test"; }
+smtp_greeting() { case ${STUB_SMTP-} in 220) printf "220 mx.example ESMTP" ;; silent) return 2 ;; no220) printf "421 unavailable" ;; timeout) return 143 ;; *) return 1 ;; esac; }
 on_terminal() { [ "${STUB_TTY-}" = 1 ]; }
 main "$@"'
 
@@ -29,7 +32,7 @@ run() {
 	shift 2
 	: >"$STUB_LOG"
 	# shellcheck disable=SC2086
-	actual=$(env -u STUB_V4 -u STUB_V6 COLUMNS=80 LANG=en_US.UTF-8 STUB_LOCAL=available STUB_SMTP=220 $envs \
+	actual=$(env -u STUB_V4 -u STUB_V6 COLUMNS=80 LANG=en_US.UTF-8 STUB_LOCAL=available STUB_SMTP=220 STUB_REPORT=success $envs \
 		bash -c "$HARNESS" "$ROOT/iplense.sh" "$@" 2>&1; printf '\n[exit %s]' "$?")
 	if [ "${UPDATE-}" = 1 ]; then
 		printf '%s\n' "$actual" >"tests/snapshots/$name.txt"
@@ -54,10 +57,10 @@ check() {
 
 exits_with() { [ "$(exit_code)" = "$1" ]; }
 # Requests to the self-check only (the local checks log their own).
-one_request() { [ "$(grep 'iplense.cc' "$STUB_LOG" | grep -c -- "^-$1 ")" = 1 ] && ! grep 'iplense.cc' "$STUB_LOG" | grep -q -- "^-$2 "; }
+one_request() { [ "$(grep 'cli/v1/self' "$STUB_LOG" | grep -c -- "^-$1 ")" = 1 ] && ! grep 'cli/v1/self' "$STUB_LOG" | grep -q -- "^-$2 "; }
 logged() { grep -q -- "$1" "$STUB_LOG"; }
 no_controls() { ! has_controls "$LAST"; }
-saved_matches() { [ "$(cat "$OUT_FILE")" = "$(printf '%s\n' "$LAST" | sed '$d' | sed '$d' | sed '$d')" ]; }
+saved_matches() { [ "$(cat "$OUT_FILE")" = "$(printf '%s\n' "$LAST" | sed '$d' | sed '$d' | sed '$d' | LC_ALL=C sed -e $'s/\033\\[[0-9;]*m//g' -e 's/ *$//')" ]; }
 saved_plain() { ! LC_ALL=C grep -q "$(printf '\033')" "$OUT_FILE"; }
 
 exit_code() {
@@ -75,6 +78,8 @@ check "the script ends with main \"\$@\" (the harness drops that line)" last_lin
 for lang in en zh; do
 	for cols in 80 120; do
 		run "$lang-$cols-dual" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200"
+		run "$lang-$cols-v4" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=full-v4.kv:200" -4
+		run "$lang-$cols-v6" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V6=full-v6.kv:200" -6
 	done
 	run "$lang-80-v4-only" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200"
 	run "$lang-80-v6-only" "LANG=${lang}_US.UTF-8 STUB_V6=full-v6.kv:200"
@@ -129,12 +134,12 @@ done
 # The website's example (iplense.cc/{zh,en}/cli shows these files): IPv4 with local checks at 120 columns, from a fixture equal
 # to full-v4.kv but with a city short enough that no cell is cut; the example must show no ellipsis.
 # Phones (below 767px) show the 80-column example, wider screens the 120-column one.
-for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=page-v4.kv:200" -4; done; done
+for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=page-v4.kv:200 STUB_LOCAL=page" -4; done; done
 no_ellipsis() { ! grep -q '…' "tests/snapshots/$1.txt"; }
 for name in en-80 zh-80 en-120 zh-120; do check "the page example has no cut cell ($name)" no_ellipsis "$name-page-example"; done
 # The page shows the example in colour (from these snapshots, as a terminal shows them); without its colour codes and the
 # spaces a label leaves at a line end, each is the plain example.
-for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example-color" "LANG=${lang}_US.UTF-8 COLUMNS=$cols TERM=xterm STUB_TTY=1 STUB_V4=page-v4.kv:200" -4; done; done
+for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example-color" "LANG=${lang}_US.UTF-8 COLUMNS=$cols TERM=xterm STUB_TTY=1 STUB_V4=page-v4.kv:200 STUB_LOCAL=page" -4; done; done
 plain_of_color() { [ "$(LC_ALL=C sed -e "s/$(printf '\033')\[[0-9;]*m//g" -e 's/ *$//' "tests/snapshots/$1-page-example-color.txt")" = "$(cat "tests/snapshots/$1-page-example.txt")" ]; }
 has_color() { LC_ALL=C grep -q "$(printf '\033')\[97;42m" "tests/snapshots/$1-page-example-color.txt"; }
 for name in en-80 zh-80 en-120 zh-120; do
@@ -144,9 +149,13 @@ done
 # NO_COLOR and -o stay plain on a terminal; so does the output when it is not a terminal (every other snapshot).
 run "no-color-on-terminal" "TERM=xterm STUB_TTY=1 NO_COLOR=1 STUB_V4=full-v4.kv:200" -4
 check "NO_COLOR: no escape codes" no_controls
-gemini_region() { grep -q "^  Gemini  *[^ ].*  $1\$" "tests/snapshots/$2.txt"; }
-check "Gemini CAN is shown as CA" gemini_region CA en-local-available
-check "an unknown three-letter code is shown as it is" gemini_region XQZ zh-local-mixed
+gemini_region() {
+	STUB_LOCAL=available answers available gemini "available $1"
+}
+# shellcheck disable=SC2016 # Expanded by the child Bash.
+check "Gemini CAN is shown as CA" bash -c 'eval "$(sed "\$d" "$0")"; [ "$(alpha2 CAN)" = CA ]' "$ROOT/iplense.sh"
+# shellcheck disable=SC2016 # Expanded by the child Bash.
+check "an unknown three-letter code is shown as it is" bash -c 'eval "$(sed "\$d" "$0")"; [ "$(alpha2 XQZ)" = XQZ ]' "$ROOT/iplense.sh"
 
 # One local check's own answer ("status region") with the platform pages of tests/fixtures/local/SCENARIO.
 # shellcheck disable=SC2016 # expanded by the inner bash, not here.
@@ -173,31 +182,65 @@ check "Gemini asks NotebookLM without following the redirect, over the same fami
 for lang in en zh; do run "$lang-family-mismatch-line" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_V6=family-mismatch.kv:200"; done
 # The address it arrived from is named only when the header does not show it already (no IPv4 result here).
 run "family-mismatch-without-result" "STUB_V4=limit-ip.kv:429 STUB_V6=family-mismatch.kv:200"
-names_address() { grep -q 'arrived over IPv4 (203.0.113.45)$' tests/snapshots/family-mismatch-without-result.txt; }
+names_address() { grep -q 'arrived over IPv4 (203.0.\*.\*)$' tests/snapshots/family-mismatch-without-result.txt; }
 check "the mismatch line names the address when nothing else does" names_address
 check "each request names its family" logged "X-IPLense-Family: 4"
 # The exit the AI traces see: named under the title when it is not the IP checked above, silent when it is.
-grep -q "AI and streaming · IPv4$" tests/snapshots/en-local-available.txt
-check "same exit: the title stays as it is" test $? -eq 0
+same_exit() { ! grep -q '^  exit ' tests/snapshots/en-local-available.txt; }
+check "same exit: no differing-exit notice" same_exit
 for lang in en zh; do run "$lang-local-exit-differs" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_LOCAL=exit-differs" -4; done
 run "local-v6-exit-differs" "STUB_V6=full-v6.kv:200 STUB_LOCAL=exit-differs" -6
 run "json-local-exit" "STUB_V4=full-v4.kv:200 STUB_LOCAL=exit-differs" -j -4
-json_exit() { grep -q '"local":{"family":4,"exitIp":"198.51.100.7"' "tests/snapshots/json-local-exit.txt"; }
+json_exit() { grep -q '"local":{"family":4,"exitIp":"198.51.*.*"' "tests/snapshots/json-local-exit.txt"; }
 check "-j names the exit the platforms see" json_exit
 run "local-disney-broken" "STUB_V4=full-v4.kv:200 STUB_LOCAL=disney-broken" -4
 disney_requests() { [ "$(grep -c bamgrid "$STUB_LOG")" = "$1" ]; }
-check "a Disney+ step that fails stops there" disney_requests 1
+check "a failed Disney+ registration sends no further requests" disney_requests 1
 run "local-available-requests" "STUB_V4=full-v4.kv:200" -4
-check "Disney+ takes three requests" disney_requests 3
+check "Disney+ registers once, without token exchange" disney_requests 1
 run "local-dual-stack" "STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200"
 platform_family() { ! grep -v 'iplense.cc' "$STUB_LOG" | grep -qv -- "^-$1 "; }
-check "dual stack: local checks over IPv4" platform_family 4
+both_families() { grep -v 'iplense.cc' "$STUB_LOG" | grep -q '^\-4 ' && grep -v 'iplense.cc' "$STUB_LOG" | grep -q '^\-6 '; }
+check "dual stack: local checks over each tested family" both_families
 run "local-v6-only" "STUB_V6=full-v6.kv:200"
 check "IPv6 only: local checks over IPv6" platform_family 6
 run "local-none-without-server" ""
 no_platforms() { ! grep -qv 'iplense.cc' "$STUB_LOG"; }
 check "no local checks when nothing reaches the server" no_platforms
 run "json-local" "STUB_V4=full-v4.kv:200" -j -4
+
+# Every new option, SMTP classification and report outcome is a snapshot and a behavioral assertion.
+for lang in en zh; do
+	run "$lang-full" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200" -f
+	run "$lang-private" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200" -4 -p
+	run "$lang-json-full" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200" -j -f -4
+	for smtp in 220 refused timeout silent no220 dns unsupported; do
+		run "$lang-port25-$smtp" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_SMTP=$smtp" -4
+	done
+	for report in success limited disabled expired mismatch invalid network; do
+		run "$lang-report-$report" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_REPORT=$report" -4
+		check "report $report never changes a successful self-check's exit" exits_with 0
+	done
+done
+run "risk-partial" "STUB_V4=risk-partial-v4.kv:200" -4 -p
+run "zh-save" "LANG=zh_CN.UTF-8 STUB_V4=full-v4.kv:200" -4 -o tests/.work/saved.txt
+check "Chinese -o file is the printed report" saved_matches
+run "private-no-upload" "STUB_V4=full-v4.kv:200" -p -4
+no_upload() { ! grep -q '/cli/v1/report' "$STUB_LOG"; }
+check "-p never uploads" no_upload
+run "json-no-upload" "STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200" -j
+check "-j never uploads" no_upload
+run "save-private" "TERM=xterm STUB_TTY=1 STUB_V4=full-v4.kv:200" -p -4 -o tests/.work/saved.txt
+check "-o file matches a terminal's report without colours" saved_matches
+check "-o file has no progress or colours" saved_plain
+check "real TTY progress and its three suppression paths" python3 tests/assert-progress.py
+run "report-contract" "STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200 STUB_LOCAL=exit-differs" -f
+# Inspect the allowed upload independently of the rendered report.
+check "-f still sends only masked exit addresses" python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert {x["family"] for x in d["local"]}=={4,6}; assert all(x["exitDiffers"] and "*" in x["exitIp"] for x in d["local"])' tests/.work/report.json
+
+
+# Terminal output fits both widths and loses no part of a long fixture location.
+check "80/120 snapshots never exceed their terminal width" python3 tests/assert-output.py
 
 run "help-en" "" -h
 run "help-zh" "" -l zh -h

@@ -1,13 +1,14 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
+  203.0.*.* · CLI 1.2.0 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64500 · Example Cloud Networks   IDC
   Operator       Example Cloud Networks LLC   IDC
   Location       Japan · Tokyo
-  Registered in  JP
+  Registered in  JP · APNIC
+  ASN traffic    Human 82%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18%
   IP Property     Native   Datacenter
 
 2. Multi-source IP Types
@@ -21,39 +22,37 @@
   IPGeolocation  Quota temporarily unavailable
   Ipregistry     This call failed
 
-3. Risk scores
+3. Risk scores and factors
   IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
   IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
-  Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
-  Risk value  35        8         62      Medium        0           0
-
-4. Risk factors
-  Source        Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
-  IPLocate      ●        ·      ·    ·    –      ·      –
-  ipapi.is      ●        ·      ·    ·    –      ·      –
-  ipdata        ●        ●      –    ·    ·      ●      –
-  Abstract API  ●        ·      ·    ·    ·      –      –
-  Proxycheck    –        ·      ·    –    –      –      –
-  AbuseIPDB     –        –      –    –    –      ·      –
+  Source        Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate      35          ●        ·      ·    ·    –      ·      –
+  ipapi.is      8           ●        ·      ·    ·    –      ·      –
+  ipdata        62          ●        ●      –    ·    ·      ●      –
+  Abstract API  Medium      ●        ·      ·    ·    ·      –      –
+  Proxycheck    0           –        ·      ·    –    –      –      –
+  AbuseIPDB     0           –        –      –    –    –      ·      –
   ● Detected  · Not detected  – Not provided
 
-5. AI and streaming · IPv4
-  ChatGPT           Supported region   CA
-  Claude            Supported region   CA
-  Gemini            Available          CA
-  Netflix           Available          CA
-  Disney+           Available          CA
-  YouTube Premium   Available          CA
-  TikTok            Available          CA
-  Prime Video       Available          CA
-  Reddit            Available          CA
+4. AI and streaming
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Available
+  Region  JP                JP                JP
 
-6. Outbound port 25
+          Netflix    Disney+    YouTube Premium
+  Status  Available  Available  Available
+  Region  JP         JP         JP
+
+          TikTok     Prime Video  Reddit
+  Status  Available  Available    Available
+  Region  JP         JP           JP
+
+5. Outbound port 25
    Available
 
 ────────────────────────────────────────────────────────────────────────────────
-  Full result    https://iplense.cc/en/ip/203.0.113.45
+  Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
   About the CLI  https://iplense.cc/en/cli
 
 [exit 0]

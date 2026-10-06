@@ -19,10 +19,11 @@
 # What it sends: one request per IP family to iplense.cc with the header "X-IPLense-CLI: 1" and the User-Agent
 # "IPLense-CLI/<version>"; the server sees only the connection IP. The local checks send one to three ordinary requests
 # to each platform checked (Disney+ registers an anonymous device with a generic description) and open port 25 to one
-# public mail server; those see the connection IP. Nothing else about this machine is sent, and results stay here.
+# public mail server; those see the connection IP. Report creation sends tokens, version, language, local statuses and
+# regions, port 25 status and a masked differing exit. Reports last 30 days; -p and -j skip creation.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.1.1
+VERSION=1.2.0
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -30,6 +31,8 @@ LANG_UI=en
 FAMILIES='4 6'
 JSON=0
 OUT=
+FULL=0
+PRIVATE=0
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Text
@@ -38,7 +41,7 @@ t() {
 	local zh en
 	case $1 in
 	title) zh='IPLense 本机 IP 体检'; en='IPLense self-check' ;;
-	checking) zh='正在检测 IPv%s…'; en='Checking IPv%s…' ;;
+	checking) zh='正在查询本机 IPv%s 结果…'; en="Querying this machine's IPv%s result…" ;;
 	no_conn) zh='无连接'; en='No connection' ;;
 	other_family) zh='无 IPv%s 出口：请求以 IPv%s 到达（%s）'; en='No IPv%s exit: the request arrived over IPv%s (%s)' ;;
 	other_family_shown) zh='无 IPv%s 出口：请求以 IPv%s 到达'; en='No IPv%s exit: the request arrived over IPv%s' ;;
@@ -53,10 +56,18 @@ t() {
 	schema) zh='响应格式不兼容，请获取最新脚本'; en='Response format not supported; get the latest script' ;;
 	minutes) zh='%s 分钟'; en='%s min' ;;
 	hours) zh='%s 小时'; en='%s h' ;;
-	report) zh='完整结果'; en='Full result' ;;
-	cli_page) zh='关于 CLI'; en='About the CLI' ;;
+	report) zh='报告链接'; en='Report link' ;;
+	retention) zh='（保留 30 天）'; en='(30 days)' ;;
+	report_missing) zh='未取得报告令牌，请重新自检'; en='No report token; run the self-check again' ;;
+	report_mismatch) zh='报告出口不匹配，请从成功检测的出口重新自检'; en='Report exit mismatch; repeat the self-check from a checked exit' ;;
+	report_invalid) zh='报告请求字段无效：%s'; en='Invalid report field: %s' ;;
+	section_risk) zh='风险评分与风险因子'; en='Risk scores and factors' ;;
+	status) zh='状态'; en='Status' ;;
+	region_label) zh='地区'; en='Region' ;;
+	client_name) zh='命令行'; en='CLI' ;;
+	cli_page) zh='关于命令行'; en='About the CLI' ;;
 	platforms) zh='AI 与流媒体'; en='AI and streaming' ;;
-	local_progress) zh='本地检测 %s/%s…'; en='Local checks %s/%s…' ;;
+	local_progress) zh='正在检测 %s（%s/%s）…'; en='Checking %s (%s/%s)…' ;;
 	local_exit) zh='出口 %s'; en='exit %s' ;;
 	local_exit_note) zh='与上方检测的 IP 不同，平台看到的是这个出口'; en='Differs from the IP checked above; the platforms see this exit' ;;
 	available) zh='可用'; en='Available' ;;
@@ -85,19 +96,24 @@ tf() {
 usage() {
 	if [ "$LANG_UI" = zh ]; then
 		printf '%s\n' \
-			'IPLense 自检：检测本机出口 IP 的归属、类型与多源风险，以及 AI 平台、流媒体与 25 端口。' \
+			'IPLense 命令行自检：检测本机出口 IP 的归属、类型与多源风险，以及 AI 平台、流媒体与 25 端口。' \
 			'' \
 			'用法：bash <(curl -sL https://iplense.cc/cli) [选项]' \
 			'  -4         只检测 IPv4' \
 			'  -6         只检测 IPv6' \
 			'  -l zh|en   输出语言（cn 同 zh；默认按 LANG）' \
 			'  -j         输出 JSON' \
+			'  -f         显示完整 IP、网段（含名称）与反向解析' \
+			'  -p         不生成报告，不上传本地检测结果' \
 			'  -o 文件    同时把输出保存到文件' \
 			'  -h         显示本帮助' \
 			'  -V         显示版本' \
 			'' \
 			'向 iplense.cc 每个协议族发一次请求，服务器只得到连接 IP。' \
-			'本地检测向各平台发 1–3 次请求，Disney+ 会注册一个匿名设备；结果只显示在本机。' \
+			'本地检测每个协议族向各平台发 1–3 次请求；Disney+ 会注册匿名设备。' \
+			'默认生成报告：上传自检令牌、版本、语言、九个平台的状态与地区、25 端口状态，' \
+			'以及出口是否不同和脱敏出口 IP；只保存脱敏报告，保留 30 天，持有链接者可查看。' \
+			'-p 或 -j 不生成报告；-f 通过系统 DNS 查询检测 IP 的反向解析。' \
 			'不需要 root，不安装任何软件，除 -o 指定的文件外不写文件。'
 	else
 		printf '%s\n' \
@@ -108,12 +124,17 @@ usage() {
 			'  -6         IPv6 only' \
 			'  -l zh|en   Output language (cn = zh; default from LANG)' \
 			'  -j         JSON output' \
+			'  -f         Full IP, network range (with name) and reverse DNS' \
+			'  -p         Skip report creation and local-result upload' \
 			'  -o FILE    Also save the output to FILE' \
 			'  -h         Show this help' \
 			'  -V         Show the version' \
 			'' \
 			'Sends one request per IP family to iplense.cc; the server sees only the connection IP.' \
-			'Local checks send 1-3 requests to each platform; Disney+ registers an anonymous device. Results stay here.' \
+			'Local checks send 1-3 requests per family to each platform; Disney+ registers an anonymous device.' \
+			'Reports upload self-check tokens, version, language, nine platform statuses and regions, port 25 status,' \
+			'and whether the exit differs and its masked IP. Only masked reports are stored, for 30 days.' \
+			"Anyone with the link can view it. -p or -j skips reports; -f queries system DNS for the checked IP's PTR." \
 			'Needs no root, installs nothing, and writes no file except the one named with -o.'
 	fi
 }
@@ -137,31 +158,91 @@ width() {
 	printf '%s' $((${#chars} + ${#wide}))
 }
 
-# Cuts text to at most $2 columns, ending with an ellipsis when it was longer.
-clip() {
-	local s=$1 max=$2 w out='' rest ch
-	w=$(width "$s")
-	if [ "$w" -le "$max" ]; then printf '%s' "$s"; return; fi
-	local LC_ALL=C
-	rest=$s
+# Complete text split into lines of at most $2 display columns. No ellipsis or discarded text.
+wrap_text() {
+	local LC_ALL=C rest=$1 out='' ch max=$2
 	while [ -n "$rest" ]; do
-		ch=${rest:0:1}
-		rest=${rest:1}
+		ch=${rest:0:1}; rest=${rest:1}
 		while [ -n "$rest" ]; do
 			case ${rest:0:1} in [$'\200'-$'\277']) ch=$ch${rest:0:1}; rest=${rest:1} ;; *) break ;; esac
 		done
-		if [ $(($(width "$out$ch") + $(width "$ELLIPSIS"))) -gt "$max" ]; then break; fi
+		if [ "$(width "$out$ch")" -gt "$max" ]; then
+			case $out in
+			*' '*) printf '%s\n' "${out% *}"; out=${out##* } ;;
+			*) printf '%s\n' "$out"; out='' ;;
+			esac
+		fi
 		out=$out$ch
 	done
-	printf '%s%s' "$out" "$ELLIPSIS"
+	printf '%s' "$out"
+}
+
+# Mask at the output boundary; compressed IPv6 is expanded before selecting its first three groups.
+mask_ip() {
+	local ip=$1 left right missing parts=() groups=() part
+	case $ip in
+	*.*.*.*)
+		case $ip in *:*) ;; *) printf '%s.*.*' "${ip%.*.*}"; return ;; esac
+		;;
+	esac
+	case $ip in *:*) ;; *) printf '%s' "$ip"; return ;; esac
+	# An embedded IPv4 tail occupies two IPv6 groups, beyond the /48 kept here.
+	case $ip in *.*) ip=${ip%:*}:0:0 ;; esac
+	if [[ $ip == *::* ]]; then
+		left=${ip%%::*}; right=${ip#*::}
+		IFS=: read -r -a parts <<<"$left"
+		groups=("${parts[@]}")
+		IFS=: read -r -a parts <<<"$right"
+		missing=$((8 - ${#groups[@]} - ${#parts[@]}))
+		while [ "$missing" -gt 0 ]; do groups[${#groups[@]}]=0; missing=$((missing - 1)); done
+		groups=("${groups[@]}" "${parts[@]}")
+	else
+		IFS=: read -r -a groups <<<"$ip"
+	fi
+	if [ "${#groups[@]}" != 8 ]; then printf '%s' "$1"; return; fi
+	for part in "${groups[@]:0:3}"; do
+		# Keep a canonical zero rather than dropping an entire group.
+		while [ "${#part}" -gt 1 ] && [ "${part:0:1}" = 0 ]; do part=${part:1}; done
+		printf '%s:' "$part"
+	done
+	printf '*:*:*:*:*'
+}
+
+display_ip() {
+	if [ "$FULL" = 1 ]; then printf '%s' "$1"; else mask_ip "$1"; fi
+}
+
+# Preserve the JSON response shape, masking addresses wherever repeated in nested public results.
+# Route/name/PTR strings are shown only with -f, as in the text report.
+private_json() {
+	local data=$1 ip ips
+	data=$(printf '%s' "$data" | sed -E 's/,[[:space:]]*"reportToken"[[:space:]]*:[[:space:]]*"[^"]*"//g')
+	if [ "$FULL" = 1 ]; then printf '%s' "$data"; return; fi
+	data=$(printf '%s' "$data" | sed -E 's/("(route|netname|reverseDns)"[[:space:]]*:[[:space:]]*)"([^"\\]|\\.)*"/\1null/g')
+	ips=$(printf '%s' "$data" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}|([0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}' | sort -u)
+	while IFS= read -r ip; do
+		[ -z "$ip" ] && continue
+		data=${data//"$ip"/$(mask_ip "$ip")}
+	done <<<"$ips"
+	printf '%s' "$data"
+}
+
+percent() { awk -v v="$1" 'BEGIN { if (v < 0) v = 0; if (v > 100) v = 100; s = sprintf("%.2f", v); sub(/0+$/, "", s); sub(/\.$/, "", s); print s }'; }
+
+# Simple fields may wrap, while their label appears only on the first line.
+detail() {
+	local name=$1 text=$2 lw=$3 row first=1
+	while IFS= read -r row; do
+		if [ "$first" = 1 ]; then printf '  %s' "$(cell "$name" "$lw" dim)"; else printf '  %*s' "$lw" ''; fi
+		printf '%s\n' "$row"; first=0
+	done <<<"$(wrap_text "$text" $((COLS - lw - 2)))"
 }
 
 # One cell: text padded to $2 columns (right-aligned when $4 is "r"), coloured with style $3. A left-aligned cell keeps at
-# least GAP (default 1) blank columns before the next one, clipping its text when needed.
+# its requested blank columns before the next one. Callers wrap long content before placing it in cells.
 cell() {
-	local text w pad room=$2
-	[ "${4-}" != r ] && room=$(($2 - ${GAP:-1}))
-	text=$(clip "$1" "$room")
+	local text w pad
+	text=$1
 	w=$(width "$text")
 	pad=$(($2 - w))
 	[ "$pad" -lt 0 ] && pad=0
@@ -417,20 +498,21 @@ render_header() {
 	printf '%s\n' "$(paint head "$BOX_BL$(repeat "$BOX_H" "$inner")$BOX_BR")"
 	for family in $RESULTS; do
 		F=$family
-		ips=${ips:+$ips$SEP}$(v ip)
+		ips=${ips:+$ips$SEP}$(display_ip "$(v ip)")
 		[ -z "$made" ] && made=$(v generatedAt)
 	done
 	case $made in
 	[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]*) made="${made:0:10} ${made:11:5} UTC" ;;
 	*) made='' ;;
 	esac
-	meta=$(joined "CLI $VERSION" "$made")
+	meta=$(joined "$(t client_name) $VERSION" "$made")
 	if [ -z "$ips" ]; then
 		printf '  %s\n' "$(paint dim "$meta")"
 	elif [ $(($(width "$ips$SEP$meta") + 2)) -le "$COLS" ]; then
 		printf '  %s%s\n' "$(paint bold "$ips")" "$(paint dim "$SEP$meta")"
 	else
-		printf '  %s\n  %s\n' "$(paint bold "$ips")" "$(paint dim "$meta")"
+		for family in $RESULTS; do F=$family; printf '  %s\n' "$(paint bold "$(display_ip "$(v ip)")")"; done
+		printf '  %s\n' "$(paint dim "$meta")"
 	fi
 }
 
@@ -446,7 +528,7 @@ render_failure() {
 render_basic() {
 	local lw=3 key name company type nature property line nature_style property_style
 	F=$1
-	for key in operator location registration ipProperty; do lw=$(max "$lw" "$(width "$(l "$key")")"); done
+	for key in operator location registration ipProperty asnTraffic; do lw=$(max "$lw" "$(width "$(l "$key")")"); done
 	lw=$((lw + 2))
 	name=$(v quick.asn.name)
 	type=$(v quick.asn.type)
@@ -460,8 +542,31 @@ render_basic() {
 		[ -n "$type" ] && line="$line  $(label "$type" 0 "$(quick_type_style "$type")")"
 		printf '  %s%s\n' "$(cell "$(l operator)" "$lw" dim)" "$line"
 	fi
-	printf '  %s%s\n' "$(cell "$(l location)" "$lw" dim)" "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")"
-	[ -n "$(v quick.registrationCountryCode)" ] && printf '  %s%s\n' "$(cell "$(l registration)" "$lw" dim)" "$(v quick.registrationCountryCode)"
+	detail "$(l location)" "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")" "$lw"
+	[ -n "$(v quick.registrationCountryCode)" ] && printf '  %s%s\n' "$(cell "$(l registration)" "$lw" dim)" "$(joined "$(v quick.registrationCountryCode)" "$(v quick.registry)")"
+	local human automated i split at bar=''
+	human=$(v quick.traffic.humanPercent) automated=$(v quick.traffic.automatedPercent)
+	# As the result page shows them: rounded to two decimals, trailing zeros dropped.
+	[ -n "$human" ] && human=$(percent "$human")
+	[ -n "$automated" ] && automated=$(percent "$automated")
+	if [ -n "$human" ]; then
+		split=$(awk -v h="$human" 'BEGIN {print int(h / 5)}')
+		at=$((split + 1)); [ "$at" -gt 20 ] && at=20
+		i=1
+		while [ "$i" -le 20 ]; do
+			if [ "$i" = "$at" ]; then bar=$bar$(paint bold "$BAR_AT")
+			elif [ "$i" -le "$split" ]; then bar=$bar$(paint pos "$BAR")
+			else bar=$bar$(paint head "$BAR"); fi
+			i=$((i + 1))
+		done
+		printf '  %s%s %s  %s  %s %s\n' "$(cell "$(l asnTraffic)" "$lw" dim)" "$(l humanTraffic)" "$human%" "$bar" "$(l automatedTraffic)" "${automated:-$MARK_NONE}%"
+	else
+		printf '  %s%s\n' "$(cell "$(l asnTraffic)" "$lw" dim)" "$MARK_NONE"
+	fi
+	if [ "$FULL" = 1 ]; then
+		detail "$(l networkRange)" "$(joined "$(v quick.asn.route)" "$(v quick.company.netname)")" "$lw"
+		detail "$(l reverseDns)" "$(v reverseDns)" "$lw"
+	fi
 	nature=$(v quick.ipNature)
 	property=$(v quick.ipProperty)
 	case $nature in Native) nature_style=bpos ;; Broadcast) nature_style=bneu ;; Unknown | '') nature_style=bnone ;; *) nature_style=bneg ;; esac
@@ -498,49 +603,6 @@ module_text() {
 	QuotaUnavailable) MT=$(l quotaUnavailable) MS=neu ;;
 	*) MT=$(l error) MS=neg ;;
 	esac
-}
-
-# Sources side by side on one line: a column per source (SB_NAMES), a row per field (SB_HEAD), the cells of field j in the
-# arrays SB_Tj (text) and SB_Sj (style). Returns 1, printing nothing, when they do not fit the width.
-side_by_side() {
-	local np=${#SB_NAMES[@]} nf=${#SB_HEAD[@]} lw i j w ref sref used widths=()
-	lw=$(width "$(l colSource)")
-	j=0
-	while [ "$j" -lt "$nf" ]; do lw=$(max "$lw" "$(width "${SB_HEAD[$j]}")"); j=$((j + 1)); done
-	lw=$((lw + 2))
-	used=$((2 + lw))
-	i=0
-	while [ "$i" -lt "$np" ]; do
-		w=$(width "${SB_NAMES[$i]}")
-		j=0
-		while [ "$j" -lt "$nf" ]; do
-			ref="SB_T${j}[$i]"
-			sref="SB_S${j}[$i]"
-			w=$(max "$w" "$(cell_width "${!ref}" "${!sref}")")
-			j=$((j + 1))
-		done
-		widths[i]=$((w + 2))
-		used=$((used + w + 2))
-		i=$((i + 1))
-	done
-	[ "$used" -le "$COLS" ] || return 1
-	printf '  %s' "$(cell "$(l colSource)" "$lw" dim)"
-	i=0
-	while [ "$i" -lt "$np" ]; do printf '%s' "$(cell "${SB_NAMES[$i]}" "${widths[$i]}" bold)"; i=$((i + 1)); done
-	printf '\n'
-	j=0
-	while [ "$j" -lt "$nf" ]; do
-		printf '  %s' "$(cell "${SB_HEAD[$j]}" "$lw" dim)"
-		i=0
-		while [ "$i" -lt "$np" ]; do
-			ref="SB_T${j}[$i]"
-			sref="SB_S${j}[$i]"
-			printf '%s' "$(GAP=2 any_cell "${!ref}" "${widths[$i]}" "${!sref}")"
-			i=$((i + 1))
-		done
-		printf '\n'
-		j=$((j + 1))
-	done
 }
 
 # Section two for a family: a row per source with its location and its usage and company types as labels, at every width.
@@ -602,18 +664,24 @@ render_types() {
 			key=$((key + 1))
 		done
 		loc_w=$((loc_w + 2)) uw=$((uw + 2)) cw=$((cw + 2))
-		# Within the terminal: a location too long for the room left is cut.
+		# Wrap long locations within the room left; keep every character.
 		over=$((2 + name_w + loc_w + uw + cw - COLS))
 		[ "$over" -gt 0 ] && loc_w=$((loc_w - over))
 		printf '  %s%s%s%s\n' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l location)" "$loc_w" dim)" "$(cell " $(l usageType)" "$uw" dim)" \
 			"$(cell " $(l companyType)" "$cw" dim)"
 		key=0
 		while [ "$key" -lt "$n" ]; do
-			printf '  %s%s' "$(cell "${SB_NAMES[$key]}" "$name_w" bold)" "$(GAP=2 any_cell "${SB_T0[$key]}" "$loc_w" "${SB_S0[$key]}")"
+			local positions=() position j=0
+			while IFS= read -r position; do positions[${#positions[@]}]=$position; done <<<"$(wrap_text "${SB_T0[$key]}" $((loc_w - 2)))"
+			printf '  %s%s' "$(cell "${SB_NAMES[$key]}" "$name_w" bold)" "$(any_cell "${positions[0]}" "$loc_w" "${SB_S0[$key]}")"
 			case ${SB_S1[$key]} in
 			b* | none) printf '%s%s\n' "$(any_cell "${SB_T1[$key]}" "$uw" "${SB_S1[$key]}")" "$(any_cell "${SB_T2[$key]}" "$cw" "${SB_S2[$key]}")" ;;
 			*) printf '%s\n' "$(paint "${SB_S1[$key]}" "${SB_T1[$key]}")" ;;
 			esac
+			j=1
+			while [ "$j" -lt "${#positions[@]}" ]; do
+				printf '  %*s%s\n' "$name_w" '' "$(paint "${SB_S0[$key]}" "${positions[$j]}")"; j=$((j + 1))
+			done
 			key=$((key + 1))
 		done
 	fi
@@ -621,9 +689,9 @@ render_types() {
 }
 
 # Section three for a family: the IPLense score and purity risk value on their scales, then each source's risk value
-# coloured by the same thresholds: side by side when they fit on one line, else a row per source.
+# coloured by the same thresholds in the combined seven-factor table.
 render_risk() {
-	local lw vw score purity tone level list provider li ti ri n=0 state value key
+	local lw vw score purity tone level
 	F=$1
 	score=$(v quick.score)
 	purity=$(v quick.purity.value)
@@ -643,59 +711,8 @@ render_risk() {
 			"$(scale "$purity" risk)" "$(paint "$tone" "$(l "level_$level")")"
 	fi
 
-	SB_NAMES=() SB_T0=() SB_S0=()
-	local failed=''
-	IFS=$'\n' read -r -d '' -a list < <(providers)
-	for provider in "${list[@]}"; do
-		ri=$(index_of riskSources "$provider")
-		[ -z "$ri" ] && continue
-		state=$(provider_state "$provider")
-		if [ "$state" != Success ]; then
-			# Named in section two when it has a location or type there.
-			li=$(index_of locations "$provider")
-			ti=$(index_of types "$provider")
-			[ -z "$li$ti" ] && failed=$failed$provider$'\t'$state$'\n'
-			continue
-		fi
-		SB_NAMES[n]=$(brand "$provider")
-		if [ "$(row_risk_state "$ri")" = Success ]; then
-			value=$(v "professional.riskSources.$ri.score.value")
-			level=$(v "professional.riskSources.$ri.score.level")
-			if [ -n "$value" ]; then
-				value=${value%%.*}
-				SB_T0[n]=$value SB_S0[n]=$(risk_tone "$value")
-			elif [ -n "$level" ]; then
-				level=$(printf '%s' "$level" | tr '[:upper:]' '[:lower:]')
-				case $level in low) tone=pos ;; medium) tone=neu ;; *) tone=neg ;; esac
-				SB_T0[n]=$(l "level_$level") SB_S0[n]=$tone
-			else
-				SB_T0[n]=$MARK_NONE SB_S0[n]=none
-			fi
-		else
-			module_text "$(row_risk_state "$ri")"
-			SB_T0[n]=$MT SB_S0[n]=$MS
-		fi
-		n=$((n + 1))
-	done
-	[ "$n" -gt 0 ] || [ -n "$failed" ] || return 0
 	printf '\n'
-	SB_HEAD=("$(l colRiskValue)")
-	if [ "$n" -gt 0 ] && side_by_side; then
-		:
-	elif [ "$n" -gt 0 ]; then
-		printf '  %s%s\n' "$(cell "$(l colSource)" "$lw" dim)" "$(cell "$(l colRiskValue)" "$vw" dim r)"
-		key=0
-		while [ "$key" -lt "$n" ]; do
-			# A module that did not answer says so in full after the name.
-			case ${SB_S0[$key]} in
-			neu | neg) [ "$(width "${SB_T0[$key]}")" -gt "$vw" ] && value=$(paint "${SB_S0[$key]}" "${SB_T0[$key]}") || value=$(cell "${SB_T0[$key]}" "$vw" "${SB_S0[$key]}" r) ;;
-			*) value=$(cell "${SB_T0[$key]}" "$vw" "${SB_S0[$key]}" r) ;;
-			esac
-			printf '  %s%s\n' "$(cell "${SB_NAMES[$key]}" "$lw" bold)" "$value"
-			key=$((key + 1))
-		done
-	fi
-	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$lw"; done
+	render_factors "$1"
 }
 
 # A module state of a type row: quota or failure in either field stands for the whole row (as on the web).
@@ -735,26 +752,33 @@ risk_mark() {
 	printf '%s' "$found"
 }
 
-# Section four for a family: the matrix, its marks red (detected), green (not detected) and grey (not provided).
+# The combined risk matrix: one source per row, its value and seven factor columns.
 render_factors() {
-	local name_w provider ri column mark list names=() rows=() n signals widths=() c
+	local name_w provider ri column mark list names=() rows=() n signals widths=() c value level tone risk_w state failed='' li ti value_lines=() line j
 	F=$1
 	IFS=$'\n' read -r -d '' -a list < <(providers)
 	for provider in "${list[@]}"; do
 		ri=$(index_of riskSources "$provider")
 		[ -z "$ri" ] && continue
-		[ "$(row_risk_state "$ri")" = Success ] || continue
-		[ -n "$(v "professional.riskSources.$ri.signals.0.canonicalKey")" ] || continue
+		if [ "$(provider_state "$provider")" != Success ]; then
+			li=$(index_of locations "$provider"); ti=$(index_of types "$provider")
+			[ -z "$li$ti" ] && failed=$failed$provider$'\t'$(provider_state "$provider")$'\n'
+			continue
+		fi
 		names[${#names[@]}]=$provider
 		rows[${#rows[@]}]=$ri
 	done
-	[ "${#rows[@]}" -eq 0 ] && return
+	if [ "${#rows[@]}" -eq 0 ]; then
+		printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$(($(width "$(brand "$provider")") + 2))"; done
+		return
+	fi
 	# Each column is as wide as its heading or widest name and two spaces (a mark is one column).
 	name_w=$(width "$(l colSource)")
 	n=0
 	while [ "$n" -lt "${#names[@]}" ]; do name_w=$(max "$name_w" "$(width "$(brand "${names[$n]}")")"); n=$((n + 1)); done
 	name_w=$((name_w + 2))
-	printf '  %s' "$(cell "$(l colSource)" "$name_w" dim)"
+	risk_w=$(($(width "$(l colRiskValue)") + 2))
+	printf '  %s%s' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l colRiskValue)" "$risk_w" dim)"
 	c=0
 	for column in $COLUMNS_RISK; do
 		widths[c]=$(($(width "$(l "column_${column%%:*}")") + 2))
@@ -765,7 +789,20 @@ render_factors() {
 	n=0
 	while [ "$n" -lt "${#rows[@]}" ]; do
 		printf '  %s' "$(cell "$(brand "${names[$n]}")" "$name_w" bold)"
+		value=$(v "professional.riskSources.${rows[$n]}.score.value")
+		level=$(v "professional.riskSources.${rows[$n]}.score.level")
+		if [ -n "$value" ]; then value=${value%%.*}; tone=$(risk_tone "$value")
+		elif [ -n "$level" ]; then
+			level=$(printf '%s' "$level" | tr '[:upper:]' '[:lower:]')
+			case $level in low) tone=pos ;; medium) tone=neu ;; *) tone=neg ;; esac
+			value=$(l "level_$level")
+		else value=$MARK_NONE; tone=none; fi
+		state=$(row_risk_state "${rows[$n]}")
 		signals=$(signal_states "${rows[$n]}")
+		if [ "$state" != Success ]; then module_text "$state"; value=$MT; tone=$MS; signals=','; fi
+		value_lines=()
+		while IFS= read -r line; do value_lines[${#value_lines[@]}]=$line; done <<<"$(wrap_text "$value" $((risk_w - 2)))"
+		printf '%s' "$(cell "${value_lines[0]}" "$risk_w" "$tone")"
 		c=0
 		for column in $COLUMNS_RISK; do
 			mark=$(risk_mark "$signals" "${column#*:}")
@@ -777,8 +814,14 @@ render_factors() {
 			c=$((c + 1))
 		done
 		printf '\n'
+		j=1
+		while [ "$j" -lt "${#value_lines[@]}" ]; do
+			printf '  %*s%s\n' "$name_w" '' "$(paint "$tone" "${value_lines[$j]}")"
+			j=$((j + 1))
+		done
 		n=$((n + 1))
 	done
+	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$name_w"; done
 }
 
 # The matrix's legend, once under every family's matrix.
@@ -787,7 +830,7 @@ render_legend() {
 		"$(paint none "$MARK_NONE")" "$(l cell_none)"
 }
 
-# The whole report. Sections one to four need a result from at least one family; five and six need the local checks.
+# The five-section report; the first three sections need at least one self-check result.
 render_report() {
 	local family count=0 block blocks out
 	for family in $RESULTS; do count=$((count + 1)); done
@@ -811,7 +854,7 @@ render_report() {
 				;;
 			esac
 		done
-		for block in types risk factors; do
+		for block in types risk; do
 			blocks=''
 			for family in $RESULTS; do
 				F=$family
@@ -823,9 +866,9 @@ render_report() {
 			[ -z "$blocks" ] && continue
 			F=${RESULTS# }
 			F=${F%% *}
-			case $block in types) section "$(l sectionTypes)" ;; risk) section "$(l sectionRisk)" ;; factors) section "$(l statRiskHits)" ;; esac
+			case $block in types) section "$(l sectionTypes)" ;; risk) section "$(t section_risk)" ;; factors) section "$(l statRiskHits)" ;; esac
 			printf '%s\n' "$blocks"
-			[ "$block" = factors ] && render_legend
+			[ "$block" = risk ] && render_legend
 		done
 	else
 		printf '\n'
@@ -835,24 +878,14 @@ render_report() {
 	render_footer
 }
 
-# A rule, then the full result for each family checked and the CLI page, one line each.
+# The footer rule; the report link and CLI page follow after the report has been printed.
 render_footer() {
-	local lw family label
-	lw=$(max "$(width "$(t report)")" "$(width "$(t cli_page)")")
-	lw=$((lw + 2))
 	printf '\n%s\n' "$(paint dim "$(repeat "$BOX_H" "$COLS")")"
-	label=$(t report)
-	for family in $RESULTS; do
-		F=$family
-		printf '  %s%s\n' "$(cell "$label" "$lw" dim)" "$BASE/$LANG_UI/ip/$(v ip)"
-		label=''
-	done
-	printf '  %s%s\n' "$(cell "$(t cli_page)" "$lw" dim)" "$BASE/$LANG_UI/cli"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Local checks: what AI and streaming platforms and a mail server answer this machine. Each reads one to three responses
-# and reports only what a response states; anything else is "check failed". Results stay on this machine.
+# and reports only what a response states; anything else is "check failed". Report creation uploads only the bounded local-result contract.
 #
 # Markers taken from two AGPL-3.0 projects, whose copyright stays with their authors:
 #   xykt/IPQuality (https://github.com/xykt/IPQuality) and lmc999/RegionRestrictionCheck
@@ -1015,23 +1048,16 @@ check_netflix() {
 	else printf 'failed'; fi
 }
 
-# Disney+ (RegionRestrictionCheck, IPQuality): register an anonymous browser device, exchange it for a token, then read the
-# session's country. The device description is the projects' generic one; nothing about this machine is sent. Three
-# requests at most, no retry; any step that does not answer as expected is a failed check.
+# Disney+: the live GraphQL registerDevice response supplies extensions.sdk.session's country and support flag.
+# The legacy devices -> token exchange intermittently returns invalid_grant/invalid-token even for a newly issued
+# assertion. Use the directly observed registration contract, one request, with a fixed generic browser description.
 check_disney() {
-	local assertion refresh region supported
-	page https://disney.api.edge.bamgrid.com/devices -X POST -H "authorization: Bearer $DISNEY_WEB_CLIENT_KEY" \
-		-H 'content-type: application/json; charset=UTF-8' -d '{"deviceFamily":"browser","applicationRuntime":"chrome","deviceProfile":"windows","attributes":{}}'
-	assertion=$(match '"assertion" *: *"([^"]+)"')
-	[ -z "$assertion" ] && { printf 'failed'; return; }
-	page https://disney.api.edge.bamgrid.com/token -X POST -H "authorization: Bearer $DISNEY_WEB_CLIENT_KEY" \
-		-d "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&latitude=0&longitude=0&platform=browser&subject_token=$assertion&subject_token_type=urn%3Abamtech%3Aparams%3Aoauth%3Atoken-type%3Adevice"
-	[[ $PAGE == *forbidden-location* ]] && { printf 'unavailable'; return; }
-	refresh=$(match '"refresh_token" *: *"([^"]+)"')
-	[ -z "$refresh" ] && { printf 'failed'; return; }
-	# shellcheck disable=SC2016 # $input is a GraphQL variable, sent as written.
+	local region supported
+	# shellcheck disable=SC2016 # $input is a GraphQL variable, sent literally.
 	page https://disney.api.edge.bamgrid.com/graph/v1/device/graphql -X POST -H "authorization: $DISNEY_WEB_CLIENT_KEY" \
-		-d '{"query":"mutation refreshToken($input: RefreshTokenInput!) { refreshToken(refreshToken: $input) { activeSession { sessionId } } }","variables":{"input":{"refreshToken":"'"$refresh"'"}}}'
+		-H 'Content-Type: application/json' \
+		-d '{"query":"mutation registerDevice($input: RegisterDeviceInput!) { registerDevice(registerDevice: $input) { grant { grantType } } }","variables":{"input":{"deviceFamily":"browser","applicationRuntime":"chrome","deviceProfile":"windows","deviceLanguage":"en","attributes":{"operatingSystem":"windows","operatingSystemVersion":"10.0"}}}}'
+	[ "${PAGE_STATUS%% *}" = 200 ] || { printf 'failed'; return; }
 	region=$(match '"countryCode" *: *"([A-Z]{2})"')
 	supported=$(match '"inSupportedLocation" *: *(true|false)')
 	if [ -n "$region" ] && [ "$supported" = true ]; then printf 'available %s' "$region"
@@ -1090,32 +1116,62 @@ check_reddit() {
 	esac
 }
 
-# The mail server's first line over port 25, read within five seconds; QUIT is sent and nothing else. Prints the line;
-# returns 1 when the connection fails and 2 when it opens but says nothing.
+# NETWORK_REDIRECTIONS enables /dev/tcp and /dev/udp together in Bash. Opening a numeric UDP socket tests the compiled
+# feature without sending a packet, resolving a name or relying on a listener or translated error messages.
+has_net_redirections() { ( : <>/dev/udp/127.0.0.1/9 ) 2>/dev/null; }
+
+# Resolve before connecting. getent hosts is provided by glibc and Alpine's musl-utils; macOS uses its system resolver.
+# Select an address of the tested family. An absent address means this machine cannot initiate that test.
+smtp_address() {
+	local records address rest field
+	case $(uname -s) in
+	Darwin)
+		field=ipv6_address; [ "$LOCAL_FAMILY" = 4 ] && field=ip_address
+		records=$(dscacheutil -q host -a name "$SMTP_HOST" 2>/dev/null | sed -n "s/^$field: //p") ;;
+	*) records=$(getent ahosts "$SMTP_HOST" 2>/dev/null | awk '{print $1}') ;;
+	esac
+	while IFS=' ' read -r address rest; do
+		case $LOCAL_FAMILY:$address in
+		4:*.*) case $address in *:*) continue ;; esac ;;
+		6:*:*) ;;
+		*) continue ;;
+		esac
+		printf '%s' "$address"; return
+	done <<<"$records"
+}
+
+# The connection has its own five-second deadline. Once connected, Bash read gives the greeting a full five seconds.
+# The same Bash executable is used, including macOS 3.2. No mail commands other than QUIT are sent.
 smtp_greeting() {
-	(
-		exec 3<>"/dev/tcp/$SMTP_HOST/25" || exit 1
+	# shellcheck disable=SC2016 # This code executes in the child Bash.
+	"$BASH" -c '
+		(sleep 5; kill -TERM "$$" 2>/dev/null) &
+		timer=$!
+		trap '"'"'kill "$timer" 2>/dev/null'"'"' EXIT
+		exec 3<>"/dev/tcp/$1/${2:-25}" || exit 1
+		kill "$timer" 2>/dev/null
+		wait "$timer" 2>/dev/null
+		trap - EXIT
 		IFS= read -r -t 5 line <&3 || exit 2
-		printf 'QUIT\r\n' >&3
-		printf '%s' "$line"
-	) 2>/dev/null &
-	local pid=$! waited=0
-	while kill -0 "$pid" 2>/dev/null && [ "$waited" -lt 50 ]; do
-		sleep 0.1
-		waited=$((waited + 1))
-	done
-	kill "$pid" 2>/dev/null
-	wait "$pid"
+		printf "QUIT\r\n" >&3
+		printf "%s" "$line"
+	' _ "$SMTP_ADDRESS" "${SMTP_PORT:-25}" 2>/dev/null
 }
 
 check_port25() {
-	local greeting status
+	local greeting
+	has_net_redirections || { printf 'failed'; return; }
+	SMTP_ADDRESS=$(smtp_address)
+	[ -n "$SMTP_ADDRESS" ] || { printf 'failed'; return; }
 	greeting=$(smtp_greeting)
-	status=$?
-	case $status:$greeting in
-	0:220*) printf 'available' ;;
-	1:*) printf 'unavailable' ;;
-	*) printf 'failed' ;;
+	case $greeting in 220[\ -]*) printf 'available' ;; *) printf 'unavailable' ;; esac
+}
+
+# Only -f asks the system resolver for a PTR; no host name is uploaded in a report.
+reverse_dns() {
+	case $(uname -s) in
+	Darwin) dscacheutil -q host -a ip_address "$1" 2>/dev/null | sed -n 's/^name: //p' ;;
+	*) getent hosts "$1" 2>/dev/null | awk '{print $2}' ;;
 	esac
 }
 
@@ -1145,7 +1201,7 @@ run_local() {
 	local answer
 	for key in $LOCAL_CHECKS; do
 		n=$((n + 1))
-		[ -t 2 ] && [ "$JSON" = 0 ] && printf '\r%s' "$(tf local_progress "$n" "$total")" >&2
+		progress "$(tf local_progress "$(local_name "$key")" "$n" "$total")"
 		case $key in
 		chatgpt | claude)
 			if [ "$key" = chatgpt ]; then answer=$(check_ai chatgpt chatgpt.com); else answer=$(check_ai claude claude.ai); fi
@@ -1156,7 +1212,7 @@ run_local() {
 		*) LOCAL_RESULTS="$LOCAL_RESULTS$key $("check_$key")"$'\n' ;;
 		esac
 	done
-	[ -t 2 ] && [ "$JSON" = 0 ] && printf '\r\033[K' >&2
+	clear_progress
 }
 
 # Splits one LOCAL_RESULTS line into KEY, STATUS and REGION.
@@ -1168,39 +1224,103 @@ split_result() {
 	[ "$rest" != "$STATUS" ] && REGION=${rest#* }
 }
 
+# A horizontal table: platform headers stay whole and columns keep two blank columns between them; status cells wrap
+# within their column, and a table still wider than the terminal is split into two tables of consecutive platforms.
+platform_table() {
+	local keys=$1 key row n=0 i j count=1 lw used=2 widths=() full_widths=() names=() states=() regions=() styles=() lines=() text ref word w full_used gap=2
+	lw=$(max "$(width "$(t status)")" "$(width "$(t region_label)")")
+	lw=$((lw + gap)); used=$((used + lw)); full_used=$used
+	for key in $keys; do
+		names[n]=$(local_name "$key")
+		widths[n]=$(width "${names[$n]}")
+		while IFS= read -r row; do
+			split_result "$row"
+			[ "$KEY" = "$key" ] || continue
+			states[n]=$(local_status "$STATUS") styles[n]=$(local_style "$STATUS") regions[n]=$REGION
+		done <<<"$LOCAL_RESULTS"
+		w=${widths[$n]}
+		for word in ${states[$n]}; do w=$(max "$w" "$(width "$word")"); done
+		widths[n]=$((w + gap))
+		full_widths[n]=$(($(max "$w" "$(width "${states[$n]}")") + gap))
+		used=$((used + widths[n])); full_used=$((full_used + full_widths[n]))
+		n=$((n + 1))
+	done
+	if [ "$full_used" -le "$COLS" ]; then widths=("${full_widths[@]}")
+	elif [ "$used" -gt "$COLS" ] && [ "$n" -gt 1 ]; then
+		local half=$(((n + 1) / 2)) first='' second='' k=0
+		for key in $keys; do
+			if [ "$k" -lt "$half" ]; then first="$first $key"; else second="$second $key"; fi
+			k=$((k + 1))
+		done
+		platform_table "$first"
+		printf '\n'
+		platform_table "$second"
+		return
+	fi
+	i=0
+	while [ "$i" -lt "$n" ]; do
+		text=$(wrap_text "${states[$i]}" $((widths[i] - gap)))
+		printf -v "PLATFORM_LINES_$i" '%s' "$text"
+		j=0; while IFS= read -r row; do j=$((j + 1)); done <<<"$text"
+		count=$(max "$count" "$j"); i=$((i + 1))
+	done
+	printf '  %*s' "$lw" ''
+	i=0; while [ "$i" -lt "$n" ]; do printf '%s' "$(cell "${names[$i]}" "${widths[$i]}" bold)"; i=$((i + 1)); done
+	printf '\n'
+	j=0
+	while [ "$j" -lt "$count" ]; do
+		if [ "$j" = 0 ]; then printf '  %s' "$(cell "$(t status)" "$lw" dim)"; else printf '  %*s' "$lw" ''; fi
+		i=0
+		while [ "$i" -lt "$n" ]; do
+			ref=PLATFORM_LINES_$i; lines=()
+			while IFS= read -r row; do lines[${#lines[@]}]=$row; done <<<"${!ref}"
+			printf '%s' "$(cell "${lines[$j]-}" "${widths[$i]}" "${styles[$i]}")"
+			i=$((i + 1))
+		done
+		printf '\n'; j=$((j + 1))
+	done
+	printf '  %s' "$(cell "$(t region_label)" "$lw" dim)"
+	i=0; while [ "$i" -lt "$n" ]; do printf '%s' "$(cell "${regions[$i]}" "${widths[$i]}" '')"; i=$((i + 1)); done
+	printf '\n'
+}
+
+load_local() {
+	LOCAL_FAMILY=$1
+	local ref=LOCAL_RESULTS_$1
+	LOCAL_RESULTS=${!ref}
+	ref=LOCAL_EXIT_$1; LOCAL_EXIT=${!ref}
+	ref=CHECKED_IP_$1; CHECKED_IP=${!ref}
+}
+
 render_local() {
-	local row style name_w=0 status_w=0 w IFS=$'\n' suffix port25='' differs=0
-	set -f
-	# The name and status columns fit their longest content (a status label is two wider than its word).
-	for row in $LOCAL_RESULTS; do
-		split_result "$row"
-		[ "$KEY" = port25 ] && continue
-		w=$(width "$(local_status "$STATUS")")
-		[ "$w" -gt "$status_w" ] && status_w=$w
-		name_w=$(max "$name_w" "$(width "$(local_name "$KEY")")")
+	local family row differs suffix first=1
+	section "$(t platforms)"
+	for family in $LOCAL_FAMILIES; do
+		[ "$first" = 0 ] && printf '\n'
+		first=0
+		load_local "$family"
+		differs=0
+		[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=1
+		suffix=''
+		[ "$FAMILIES" != "$family" ] && suffix="IPv$family"
+		[ "$differs" = 1 ] && suffix=$(joined "$suffix" "$(tf local_exit "$(display_ip "$LOCAL_EXIT")")")
+		[ -n "$suffix" ] && printf '  %s\n' "$(paint bold "$suffix")"
+		[ "$differs" = 1 ] && printf '  %s\n' "$(paint dim "$(t local_exit_note)")"
+		platform_table 'chatgpt claude gemini'
+		printf '\n'
+		platform_table 'netflix disney youtube tiktok prime reddit'
 	done
-	status_w=$((status_w + 4))
-	name_w=$((name_w + 2))
-	# When the platforms leave through another exit than the IP checked above (split routing), the title names it.
-	[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=1
-	suffix="${SEP}IPv$LOCAL_FAMILY"
-	[ "$differs" = 1 ] && suffix="$suffix${SEP}$(tf local_exit "$LOCAL_EXIT")"
-	section "$(t platforms)" "$(paint dim "$suffix")"
-	[ "$differs" = 1 ] && printf '  %s\n' "$(paint dim "$(t local_exit_note)")"
-	for row in $LOCAL_RESULTS; do
-		split_result "$row"
-		style=$(local_style "$STATUS")
-		if [ "$KEY" = port25 ]; then
-			port25=$(label "$(local_status "$STATUS")" 0 "$style")
-		elif [ "$STATUS" = region ]; then
-			printf '  %s%s%s\n' "$(cell "$(local_name "$KEY")" "$name_w" bold)" "$(cell " $MARK_NONE" "$status_w" none)" "$REGION"
-		else
-			printf '  %s%s%s\n' "$(cell "$(local_name "$KEY")" "$name_w" bold)" "$(label "$(local_status "$STATUS")" "$status_w" "$style")" "$REGION"
-		fi
-	done
-	set +f
 	section "$(t port25)"
-	printf '  %s\n' "$port25"
+	for family in $LOCAL_FAMILIES; do
+		load_local "$family"
+		while IFS= read -r row; do
+			split_result "$row"
+			if [ "$KEY" = port25 ]; then
+				if [ "$FAMILIES" = "$family" ]; then printf '  %s\n' "$(label "$(local_status "$STATUS")" 0 "$(local_style "$STATUS")")"
+				else printf '  IPv%s  %s\n' "$family" "$(label "$(local_status "$STATUS")" 0 "$(local_style "$STATUS")")"; fi
+			fi
+		done <<<"$LOCAL_RESULTS"
+	done
 }
 
 # A local check's label colour, as the website shows platform access: available green, unavailable red, partial amber,
@@ -1226,7 +1346,7 @@ local_json() {
 		out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}"
 	done
 	set +f
-	printf '{"family":%s,"exitIp":"%s"%s}' "$LOCAL_FAMILY" "$LOCAL_EXIT" "$out"
+	printf '{"family":%s,"exitIp":"%s"%s}' "$LOCAL_FAMILY" "$(display_ip "$LOCAL_EXIT")" "$out"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -1237,18 +1357,109 @@ on_terminal() {
 	[ -t 1 ]
 }
 
+progress() {
+	if on_terminal && [ -t 2 ] && [ "$JSON" = 0 ] && [ -z "$OUT" ]; then printf '\r\033[K%s' "$1" >&2; fi
+}
+clear_progress() {
+	if on_terminal && [ -t 2 ] && [ "$JSON" = 0 ] && [ -z "$OUT" ]; then printf '\r\033[K' >&2; fi
+}
+
+# Drop one family from LOCAL_FAMILIES (word by word: bash 3.2 ignores a quoted pattern with a space in ${var%...}).
+drop_local_family() {
+	local f out=''
+	for f in $LOCAL_FAMILIES; do [ "$f" = "$1" ] || out="$out $f"; done
+	LOCAL_FAMILIES=$out
+}
+
+# Upload only the report contract; -f never changes the masked exit sent here.
+report_local_json() {
+	local row out='' port=failed differs=false exit=''
+	load_local "$1"
+	[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=true
+	[ "$differs" = true ] && exit=$(mask_ip "$LOCAL_EXIT")
+	while IFS= read -r row; do
+		[ -z "$row" ] && continue
+		split_result "$row"
+		if [ "$KEY" = port25 ]; then port=$STATUS
+		else
+			# Unknown alpha-3 codes can be displayed locally, but are not a report country code.
+			case $REGION in [A-Z][A-Z] | '') ;; *) REGION='' ;; esac
+			out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}"
+		fi
+	done <<<"$LOCAL_RESULTS"
+	printf '{"family":%s,"platforms":{%s},"port25":"%s","exitDiffers":%s,"exitIp":"%s"}' "$1" "${out#,}" "$port" "$differs" "$exit"
+}
+
+# The report link and the CLI page link share one label column.
+footer_width() {
+	local a b
+	a=$(width "$(l reportLink)"); b=$(width "$(t cli_page)")
+	[ "$a" -ge "$b" ] || a=$b
+	printf '%s' $((a + 2))
+}
+
+create_report() {
+	local family tokens='' checks='' token response code body re url error field reason
+	for family in $RESULTS; do
+		F=$family; token=$(v reportToken)
+		[ -z "$token" ] && { detail "$(t report)" "$(t report_missing)" "$(footer_width)"; return; }
+		tokens="$tokens,\"$token\""
+		checks="$checks,$(report_local_json "$family")"
+	done
+	[ -z "$tokens" ] && { detail "$(t report)" "$(t report_missing)" "$(footer_width)"; return; }
+	family=${RESULTS# }; family=${family%% *}
+	body="{\"schema\":\"cli-report/1\",\"clientVersion\":\"$VERSION\",\"locale\":\"$LANG_UI\",\"reportTokens\":[${tokens#,}],\"local\":[${checks#,}]}"
+	response=$(curl "-$family" -sS --connect-timeout 8 --max-time 15 -H 'X-IPLense-CLI: 1' -H 'Content-Type: application/json' \
+		-A "IPLense-CLI/$VERSION" -X POST --data "$body" -w '\n%{http_code}' "$BASE/cli/v1/report" 2>/dev/null)
+	code=${response##*$'\n'}
+	body=$(strip_controls "${response%$'\n'*}")
+	re='"url"[[:space:]]*:[[:space:]]*"([^"]*)"'
+	if [ "$code" = 200 ] && [[ $body =~ $re ]]; then
+		url=${BASH_REMATCH[1]}
+		url=${url//\\\//\/}
+		local lw line
+		lw=$(footer_width)
+		line="  $(cell "$(l reportLink)" "$lw" dim)$url $(t retention)"
+		# Measure the line without its colour codes.
+		if [ "$(width "  $(cell "$(l reportLink)" "$lw" '')$url $(t retention)")" -le "$COLS" ]; then printf '%s\n' "$line"
+		else
+			detail "$(l reportLink)" "$url" "$lw"
+			printf '  %*s%s\n' "$lw" '' "$(t retention)"
+		fi
+		return
+	fi
+	re='"error"[[:space:]]*:[[:space:]]*"([a-z_]+)"'; error=''
+	[[ $body =~ $re ]] && error=${BASH_REMATCH[1]}
+	case $error in
+	rate_limited) reason=$(l reportRateLimited) ;;
+	report_disabled) reason=$(l reportDisabled) ;;
+	report_token_expired) reason=$(l reportTokenExpired) ;;
+	report_token_mismatch) reason=$(t report_mismatch) ;;
+	invalid_field)
+		re='"field"[[:space:]]*:[[:space:]]*"([A-Za-z0-9_.-]+)"'; field='body'
+		[[ $body =~ $re ]] && field=${BASH_REMATCH[1]}
+		reason=$(tf report_invalid "$field") ;;
+	header_required) reason=$(t header_required) ;;
+	*) reason=$(l reportNetworkError) ;;
+	esac
+	[ -z "$reason" ] && reason=$(tf server_error "$code")
+	detail "$(t report)" "$reason" "$(footer_width)"
+}
+
 main() {
 	local opt
 	case ${LC_ALL:-${LC_MESSAGES:-${LANG:-}}} in zh* | ZH*) LANG_UI=zh ;; esac
-	while getopts '46l:jo:hV' opt; do
+	while getopts '46l:jfpo:hV' opt; do
 		case $opt in
 		4) FAMILIES=4 ;;
 		6) FAMILIES=6 ;;
 		l) case $OPTARG in zh* | cn) LANG_UI=zh ;; *) LANG_UI=en ;; esac ;;
 		j) JSON=1 ;;
+		f) FULL=1 ;;
+		p) PRIVATE=1 ;;
 		o) OUT=$OPTARG ;;
 		h) usage; return 0 ;;
-		V) printf 'IPLense CLI %s\n' "$VERSION"; return 0 ;;
+		V) printf 'IPLense %s %s\n' "$(t client_name)" "$VERSION"; return 0 ;;
 		*) printf '%s\n' "$(t bad_option)" >&2; return 2 ;;
 		esac
 	done
@@ -1270,38 +1481,49 @@ main() {
 	[ "$COLS" -gt 120 ] && COLS=120
 	case ${LC_ALL:-${LC_CTYPE:-${LANG:-}}} in
 	*UTF-8* | *utf8* | *UTF8* | *utf-8*)
-		MARK_HIT='●' MARK_CLEAR='·' MARK_NONE='–' SEP=' · ' ELLIPSIS='…'
+		MARK_HIT='●' MARK_CLEAR='·' MARK_NONE='–' SEP=' · '
 		BOX_TL='┌' BOX_TR='┐' BOX_BL='└' BOX_BR='┘' BOX_H='─' BOX_V='│' BAR='━' BAR_AT='┃'
 		;;
 	*)
-		MARK_HIT='x' MARK_CLEAR='.' MARK_NONE='-' SEP=' / ' ELLIPSIS='...'
+		MARK_HIT='x' MARK_CLEAR='.' MARK_NONE='-' SEP=' / '
 		BOX_TL='+' BOX_TR='+' BOX_BL='+' BOX_BR='+' BOX_H='-' BOX_V='|' BAR='=' BAR_AT='|'
 		;;
 	esac
 
-	local family format ok=0 reached=0 json_parts='' re
+	local family format ok=0 reached=0 json_parts='' re http
 	LOCAL_FAMILY=
+	LOCAL_FAMILIES=
 	CHECKED_IP=
 	RESULTS=
 	format=kv
 	[ "$JSON" = 1 ] && format=json
 	for family in $FAMILIES; do
-		[ -t 2 ] && [ "$JSON" = 0 ] && printf '\r%s' "$(tf checking "$family")" >&2
+		progress "$(tf checking "$family")"
 		fetch "$family" "$format"
-		[ -t 2 ] && [ "$JSON" = 0 ] && printf '\r\033[K' >&2
+		clear_progress
 		[ -n "$STATUS" ] && reached=1
 		# Local checks go over the first family that reached the server (IPv4 on a dual-stack machine).
-		[ -n "$STATUS" ] && [ -z "$LOCAL_FAMILY" ] && LOCAL_FAMILY=$family
+		[ -n "$STATUS" ] && LOCAL_FAMILIES="$LOCAL_FAMILIES $family"
+		http=$STATUS
 		if [ "$JSON" = 1 ]; then
 			re='"aiRegions":\{"version":"[^"]*","chatgpt":"([A-Z,]*)","claude":"([A-Z,]*)"\}'
 			if [ -z "${AI_JSON_LISTS-}" ] && [[ $BODY =~ $re ]]; then
 				AI_JSON_LISTS="chatgpt=${BASH_REMATCH[1]}"$'\n'"claude=${BASH_REMATCH[2]}"
 			fi
+			re='"ip"[[:space:]]*:[[:space:]]*"([0-9A-Fa-f.:]+)"'
+			[[ $BODY =~ $re ]] && printf -v "CHECKED_IP_$family" '%s' "${BASH_REMATCH[1]}"
+			if [ "$FULL" = 1 ] && [ "$http" = 200 ] && [[ $BODY != *'"error"'* ]]; then
+				local ptr ref="CHECKED_IP_$family"
+				ptr=$(strip_controls "$(reverse_dns "${!ref}")")
+				ptr=${ptr//\\/\\\\}; ptr=${ptr//\"/\\\"}; ptr=${ptr//$'\n'/\\n}
+				BODY="${BODY%\}},\"reverseDns\":\"$ptr\"}"
+			fi
+			case $BODY in *'"family_mismatch"'*) drop_local_family "$family" ;; esac
 			case $BODY in
-			'{'*) json_parts="$json_parts,\"ipv$family\":$BODY" ;;
+			'{'*) json_parts="$json_parts,\"ipv$family\":$(private_json "$BODY")" ;;
 			*) json_parts="$json_parts,\"ipv$family\":{\"error\":\"unreachable\"}" ;;
 			esac
-			[ "$STATUS" = 200 ] && ok=1
+			[ "$http" = 200 ] && ok=1
 			continue
 		fi
 		# A family without a result keeps its reason in FAIL_<family> and the reason's colour in FAIL_STYLE_<family>.
@@ -1316,27 +1538,43 @@ main() {
 		if [ "$(v schema)" != "$SCHEMA" ]; then
 			printf -v "FAIL_$family" '%s' "$(t schema)"
 		elif [ "$(v error)" = family_mismatch ]; then
+			drop_local_family "$family"
 			# A proxy carried this family's request out over the other one; the server answers without counting it. The address
 			# it arrived from is named unless the header already shows it (the other family's own result).
 			if [ -n "$CHECKED_IP" ] && [ "$(v ip)" = "$CHECKED_IP" ]; then
 				printf -v "FAIL_$family" '%s' "$(tf other_family_shown "$family" "$(v arrivedFamily)")"
 			else
-				printf -v "FAIL_$family" '%s' "$(tf other_family "$family" "$(v arrivedFamily)" "$(v ip)")"
+				printf -v "FAIL_$family" '%s' "$(tf other_family "$family" "$(v arrivedFamily)" "$(display_ip "$(v ip)")")"
 			fi
 			printf -v "FAIL_STYLE_$family" '%s' dim
 		elif [ "$STATUS" != 200 ]; then
 			printf -v "FAIL_$family" '%s' "$(failure "$STATUS")"
 		else
 			RESULTS="$RESULTS $family"
-			[ "$family" = "$LOCAL_FAMILY" ] && CHECKED_IP=$(v ip)
+			CHECKED_IP=$(v ip)
+			printf -v "CHECKED_IP_$family" '%s' "$CHECKED_IP"
+			if [ "$FULL" = 1 ]; then printf -v "K${family}_reverseDns" '%s' "$(strip_controls "$(reverse_dns "$CHECKED_IP")")"; fi
 			ok=1
 		fi
 	done
 
-	[ -n "$LOCAL_FAMILY" ] && run_local
+	if [ "$JSON" = 1 ] && [ -n "$LOCAL_FAMILIES" ]; then
+		family=${LOCAL_FAMILIES# }; LOCAL_FAMILIES=${family%% *}
+	fi
+	for family in $LOCAL_FAMILIES; do
+		LOCAL_FAMILY=$family
+		run_local
+		printf -v "LOCAL_RESULTS_$family" '%s' "$LOCAL_RESULTS"
+		printf -v "LOCAL_EXIT_$family" '%s' "$LOCAL_EXIT"
+	done
 	local output
 	if [ "$JSON" = 1 ]; then
-		[ -n "$LOCAL_FAMILY" ] && json_parts="$json_parts,\"local\":$(local_json)"
+		# Preserve the JSON client's existing local object (the first reachable family).
+		if [ -n "$LOCAL_FAMILIES" ]; then
+			family=${LOCAL_FAMILIES# }; family=${family%% *}
+			load_local "$family"
+			json_parts="$json_parts,\"local\":$(local_json)"
+		fi
 		output="{\"cli\":\"$VERSION\"$json_parts}"
 	else
 		output=$(render_report)
@@ -1344,6 +1582,18 @@ main() {
 	# Cells are padded to their width; the last one leaves trailing spaces behind.
 	output=$(printf '%s\n' "$output" | sed 's/ *$//')
 	printf '%s\n' "$output"
+	if [ "$JSON" = 0 ] && [ "$PRIVATE" = 0 ]; then
+		local link
+		link=$(create_report)
+		printf '%s\n' "$link"
+		output="$output"$'\n'"$link"
+	fi
+	if [ "$JSON" = 0 ]; then
+		local footer
+		footer=$(printf '  %s%s' "$(cell "$(t cli_page)" "$(footer_width)" dim)" "$BASE/$LANG_UI/cli")
+		printf '%s\n' "$footer"
+		output="$output"$'\n'"$footer"
+	fi
 	if [ -n "$OUT" ]; then
 		# The saved copy carries no colour codes (nor the spaces a label leaves at the end of a line).
 		local LC_ALL=C plain=$output

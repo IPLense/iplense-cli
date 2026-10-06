@@ -1,25 +1,28 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.1.1
+  CLI 1.2.0
 
   IPv4  Check limit reached for this IP; try again in 7 min
 
-1. AI and streaming · IPv4
-  ChatGPT           Check failed
-  Claude            –                CA
-  Gemini            Available        XQZ
-  Netflix           Originals only   JP
-  Disney+           Unavailable      KR
-  YouTube Premium   Check failed
-  TikTok            Available        JP
-  Prime Video       Available        JP
-  Reddit            Check failed
+1. AI and streaming
+          ChatGPT       Claude  Gemini
+  Status  Check failed  –       Available
+  Region                CA      XQZ
+
+          Netflix         Disney+      YouTube Premium
+  Status  Originals only  Unavailable  Check failed
+  Region  JP              KR
+
+          TikTok     Prime Video  Reddit
+  Status  Available  Available    Check failed
+  Region  JP         JP
 
 2. Outbound port 25
-   Check failed
+   Unavailable
 
 ────────────────────────────────────────────────────────────────────────────────
+  Report link    No report token; run the self-check again
   About the CLI  https://iplense.cc/en/cli
 
 [exit 1]

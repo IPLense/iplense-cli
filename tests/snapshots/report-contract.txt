@@ -1,0 +1,101 @@
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              IPLense self-check                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+  203.0.113.45
+  2001:db8:4860:1234:5678:9abc:def0:1
+  CLI 1.2.0 · 2026-10-05 01:00 UTC
+
+1. Basics
+  IPv4
+  ASN            AS64500 · Example Cloud Networks   IDC
+  Operator       Example Cloud Networks LLC   IDC
+  Location       Japan · Tokyo
+  Registered in  JP · APNIC
+  ASN traffic    Human 81.68%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18.32%
+  Network range  203.0.113.0/24 · EXAMPLE-NET
+  Reverse DNS    host-203-0-113-45.example.test
+  IP Property     Native   Datacenter
+
+  IPv6
+  ASN            AS64501 · Beispiel Telekom   ISP
+  Operator       Beispiel Telekom AG   ISP
+  Location       Germany · Bavaria · München
+  Registered in  DE · RIPE NCC
+  ASN traffic    Human 82%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18%
+  Network range  2001:db8:4860::/48 · EXAMPLE-NET
+  Reverse DNS    host-203-0-113-45.example.test
+  IP Property     Native   Residential
+
+2. Multi-source IP Types
+  IPv4
+  Source         Location                                Usage       Company
+  IPLocate       JP · Tokyo                              IDC         Business
+  ipapi.is       JP · Shinagawa                          IDC         IDC
+  ipdata         JP · Higashi-Ōsaka Industrial           IDC         Business
+                 District North Ward
+  Abstract API   JP · Tokyo                              IDC         –
+  IPinfo         JP · Tokyo                              IDC         –
+  Proxycheck     JP · Tokyo                              Business    –
+  IPGeolocation  Quota temporarily unavailable
+  Ipregistry     This call failed
+
+  IPv6
+  Source    Location        Usage   Company
+  IPLocate  DE · München    ISP     ISP
+  ipapi.is  DE · Nürnberg   ISP     ISP
+  IPinfo    DE · München    ISP     –
+
+3. Risk scores and factors
+  IPv4
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
+  IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
+
+  Source        Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate      35          ●        ·      ·    ·    –      ·      –
+  ipapi.is      8           ●        ·      ·    ·    –      ·      –
+  ipdata        62          ●        ●      –    ·    ·      ●      –
+  Abstract API  Medium      ●        ·      ·    ·    ·      –      –
+  Proxycheck    0           –        ·      ·    –    –      –      –
+  AbuseIPDB     0           –        –      –    –    –      ·      –
+
+  IPv6
+  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━  Excellent
+  IP Purity Risk value       4/100  ┃━━━━━━━━━━━━━━━━━━━  Low
+
+  Source    Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate  0           ·        ·      ·    ·    –      ·      –
+  ipapi.is  0           ·        ·      ·    ·    –      ·      –
+  ● Detected  · Not detected  – Not provided
+
+4. AI and streaming
+  IPv4 · exit 198.51.100.7
+  Differs from the IP checked above; the platforms see this exit
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Check failed
+  Region  CA                CA
+
+          Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  Status  Check    Check    Check failed     Check   Check        Check
+          failed   failed                    failed  failed       failed
+  Region
+
+  IPv6 · exit 2001:db8::7
+  Differs from the IP checked above; the platforms see this exit
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Check failed
+  Region  CA                CA
+
+          Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  Status  Check    Check    Check failed     Check   Check        Check
+          failed   failed                    failed  failed       failed
+  Region
+
+5. Outbound port 25
+  IPv4   Available
+  IPv6   Available
+
+────────────────────────────────────────────────────────────────────────────────
+  Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
+  About the CLI  https://iplense.cc/en/cli
+
+[exit 0]

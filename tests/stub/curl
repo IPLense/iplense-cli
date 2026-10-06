@@ -9,7 +9,7 @@ for arg in "$@"; do
 	case $arg in
 	-4) family=4 ;;
 	-6) family=6 ;;
-	https://*) url=$arg ;;
+	https://* | http://*) url=$arg ;;
 	esac
 	case $arg in *format=json*) format=json ;; esac
 	case $arg in *lang=zh*) lang=zh ;; esac
@@ -20,13 +20,30 @@ fixtures=$(dirname "$0")/../fixtures
 [ -n "${STUB_LOG-}" ] && printf '%s\n' "$*" >>"$STUB_LOG"
 
 case $url in
+https://iplense.cc/cli/v1/report)
+	previous=''
+	for arg in "$@"; do
+		[ "$previous" = --data ] && printf '%s' "$arg" >"$(dirname "$0")/../.work/report.json"
+		previous=$arg
+	done
+	case ${STUB_REPORT-success} in
+	success) printf '{"schema":"cli-report/1","url":"https:\\/\\/iplense.cc\\/r\\/AAAAAAAAAAAAAAAAAAAAAA.svg","expiresAt":"2026-11-04T01:00:00Z"}\n200' ;;
+	limited) printf '{"schema":"cli-report/1","error":"rate_limited","scope":"ip","retryAfter":600}\n429' ;;
+	disabled) printf '{"schema":"cli-report/1","error":"report_disabled","retryAfter":600}\n503' ;;
+	expired) printf '{"schema":"cli-report/1","error":"report_token_expired","field":"reportTokens.0"}\n410' ;;
+	mismatch) printf '{"schema":"cli-report/1","error":"report_token_mismatch"}\n403' ;;
+	invalid) printf '{"schema":"cli-report/1","error":"invalid_field","field":"local.0.family"}\n400' ;;
+	network) exit 7 ;;
+	esac
+	exit 0
+	;;
 https://iplense.cc/*)
 	name=STUB_V$family
 	spec=${!name-}
 	[ -z "$spec" ] && exit 7
 	file=${spec%%:*} status=${spec##*:}
 	if [ "$format" = json ]; then
-		printf '{"schema":"cli-self/1","ip":"stub-v%s","aiRegions":{"version":"stub","chatgpt":"CA,US","claude":"CA,US"}}' "$family"
+		printf '{"schema":"cli-self/1","ip":"%s","quick":{"ip":"%s","asn":{"route":"203.0.113.0/24"},"company":{"netname":"EXAMPLE-NET"}},"professional":{"ip":"%s"},"aiRegions":{"version":"stub","chatgpt":"CA,US","claude":"CA,US"}}' "$(sed -n 's/^ip=//p' "$fixtures/$file")" "$(sed -n 's/^ip=//p' "$fixtures/$file")" "$(sed -n 's/^ip=//p' "$fixtures/$file")"
 	else
 		cat "$fixtures/$file"
 		# A result carries the site's words in the requested language and the AI lists, as the server adds them.

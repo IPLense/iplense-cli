@@ -1,0 +1,45 @@
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                  IPLense self-check                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  2001:db8:4860:*:*:*:*:* · CLI 1.2.0 · 2026-10-05 01:00 UTC
+
+1. Basics
+  ASN            AS64501 · Beispiel Telekom   ISP
+  Operator       Beispiel Telekom AG   ISP
+  Location       Germany · Bavaria · München
+  Registered in  DE · RIPE NCC
+  ASN traffic    Human 82%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18%
+  IP Property     Native   Residential
+
+2. Multi-source IP Types
+  Source    Location        Usage   Company
+  IPLocate  DE · München    ISP     ISP
+  ipapi.is  DE · Nürnberg   ISP     ISP
+  IPinfo    DE · München    ISP     –
+
+3. Risk scores and factors
+  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━  Excellent
+  IP Purity Risk value       4/100  ┃━━━━━━━━━━━━━━━━━━━  Low
+
+  Source    Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate  0           ·        ·      ·    ·    –      ·      –
+  ipapi.is  0           ·        ·      ·    ·    –      ·      –
+  ● Detected  · Not detected  – Not provided
+
+4. AI and streaming
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Available
+  Region  CA                CA                CA
+
+          Netflix    Disney+    YouTube Premium  TikTok     Prime Video  Reddit
+  Status  Available  Available  Available        Available  Available    Available
+  Region  CA         CA         CA               CA         CA           CA
+
+5. Outbound port 25
+   Available
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
+  About the CLI  https://iplense.cc/en/cli
+
+[exit 0]

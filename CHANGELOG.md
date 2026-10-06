@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- Five sections: basics with ASN traffic and registry; multi-source types; combined risk scores and seven factors; horizontal AI and streaming tables; outbound port 25. Long values wrap without truncation at 80 and 120 columns; a platform table too wide for the terminal splits into two. Chinese output names the client 命令行.
+- IPv4 hides its last two octets; IPv6 keeps three groups and hides five. This also applies to JSON, files and differing-exit notices. `-f` shows complete addresses, network range/name and a system-DNS PTR result. Full-result links are removed.
+- Report creation is on by default, using only the `cli-report/1` contract; reports last 30 days. `-p` and `-j` skip creation. Report failures leave the printed results and exit code intact.
+- Each reachable IP family gets its own local checks. Terminal progress names each platform and clears the line; non-TTY, `-j` and `-o` never print progress.
+- Port 25 resolves the mail server first and tests the current Bash's network-redirection support. Refusal, connection timeout, missing greeting and a non-220 greeting are unavailable; inability to initiate the test is failed. Connection and greeting each get five seconds.
+- macOS `/bin/bash` 3.2: a family whose request arrived over the other family no longer runs local checks.
+- Disney+: the legacy devices/token exchange intermittently rejected a newly issued assertion with HTTP 400 `invalid_grant` / `invalid-token`. One GraphQL `registerDevice` request now reads the session's country and support flag directly; its fixed browser description carries no machine details. The direct contract was verified against real responses.
+
 ## 1.1.1
 
 Gemini and YouTube Premium checks, and the score's grade word.

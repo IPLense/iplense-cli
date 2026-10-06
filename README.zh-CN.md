@@ -1,4 +1,6 @@
-# IPLense CLI
+# IPLense 命令行
+
+1.2.0 默认脱敏 IP，并生成保留 30 天的报告。使用 `-p` 让本地检测结果只留在本机。
 
 [English](README.md)
 
@@ -26,7 +28,9 @@ sha256sum iplense.sh
 | --- | --- |
 | `-4` / `-6` | 只检测 IPv4 或 IPv6（默认两者都测） |
 | `-l zh\|en` | 输出语言，`cn` 同 `zh`（默认按 `LANG`） |
-| `-j` | 输出 JSON |
+| `-f` | 显示完整 IP、网段（含名称）与反向解析 |
+| `-p` | 不生成报告，不上传本地检测结果 |
+| `-j` | 输出 JSON，不上传报告 |
 | `-o 文件` | 同时把输出保存到文件（不含颜色） |
 | `-h` / `-V` | 帮助 / 版本 |
 
@@ -52,11 +56,11 @@ sha256sum iplense.sh
 
 ## 检测内容
 
-- **本机出口 IP**（来自 iplense.cc）：ASN、运营公司与位置；IPLense 评分、纯净度风险值与网络类型；各数据源的位置、使用类型、公司类型、风险值与风险因子。
-- **本地检测**（从本机发起；双栈机器走 IPv4）：
+- **本机出口 IP**（来自 iplense.cc）：ASN、运营公司与位置、ASN 人类 / 自动化流量构成与注册机构；IPLense 评分、纯净度风险值与网络类型；各数据源的位置、使用类型、公司类型、风险值与风险因子。
+- **本地检测**（从本机发起，每个可达协议族分别检测；JSON 沿用首个协议族的本地结果对象）：
   - ChatGPT 与 Claude：平台看到的地区，对照官方支持地区名单；
   - Gemini、Netflix、Disney+、YouTube Premium、TikTok、Prime Video、Reddit：是否可用及地区；
-  - 出站 25 端口：公开邮件服务器（Gmail MX）是否应答。
+  - 出站 25 端口：是否读到 Gmail MX 的 `220` 问候。先解析，再连接；连接被拒、连接超过 5 秒或连接后 5 秒内没有 `220` 为不可用；无法解析服务器或 Bash 不支持网络重定向为检测失败。
 
   拿不到明确答复的项写“检测失败”，不做猜测。
 
@@ -65,85 +69,83 @@ sha256sum iplense.sh
 - **iplense.cc**：每个协议族收到一次请求，带请求头 `X-IPLense-CLI: 1`、`X-IPLense-Family`（4 或 6）与 User-Agent `IPLense-CLI/<版本>`。服务器只查询请求来源的地址，不接收本机的其他任何信息。
 - **数据源**：iplense.cc 就该地址向 IP 数据服务查询，与在网站上查询相同。
 - **被检测的平台**：
-  - 各收到 1–3 次常规请求（桌面浏览器 User-Agent），对方看到本机 IP；
+  - 每个协议族各收到 1–3 次常规请求（桌面浏览器 User-Agent），对方看到本机 IP；
   - 脚本不登录、不提交账号信息；
   - Disney+ 检测会向 Disney 的服务注册一个匿名设备，只提交通用的设备描述（浏览器、Chrome、Windows），做法与下方致谢的开源脚本相同。
 - **25 端口**：只与 Gmail 的邮件服务器建立一次连接，读到问候后发送 `QUIT`，不发送任何邮件。
-- 本地检测结果只显示在本机，不上传。
+- **报告**：默认发送自检令牌、客户端版本、语言、九个平台的状态与地区、25 端口状态，以及出口是否不同和脱敏后的出口 IP。本站只保存脱敏报告，保留 30 天，持有链接者可查看。`-p` 或 `-j` 不生成报告，本地检测结果不上传；`-f` 也不会在报告请求中发送完整 IP。
+- **反向解析**：`-f` 通过系统 DNS 查询检测 IP 的 PTR 记录。
 
 iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh/privacy)。
 
 ## 频率限制
 
-- 自检每个 IP 每 10 分钟 3 次、每天 10 次。
+- 自检每个 IP 每 10 分钟 20 次，不限每日次数。
 - 同一 IP 的结果保留 1 小时，期间重复运行返回同一结果，不再查询数据服务。
 - 达到限制时，脚本会说明多久后可以再试。
 
 ## 示例
 
-示例输出，使用文档保留地址（`203.0.113.0/24`），只检测 IPv4，80 列（各数据源风险值能放进一行时横排）：
+五节示例输出，使用脱敏文档保留地址，位置与平台地区均为 JP，只检测 IPv4，80 列：
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                             IPLense 本机 IP 体检                             │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
+  203.0.*.* · 命令行 1.2.0 · 2026-10-05 01:00 UTC
 
 一、基础信息
-  ASN          AS64500 · Example Cloud Networks   IDC
-  运营公司     Example Cloud Networks LLC   IDC
-  位置         Japan · Tokyo
-  IP 注册地区  JP
-  IP 属性       原生   机房
+  ASN           AS64500 · Example Cloud Networks   IDC
+  运营公司      Example Cloud Networks LLC   IDC
+  位置          Japan · Tokyo
+  IP 注册地区   JP · APNIC
+  ASN 流量构成  人类流量 82%  ━━━━━━━━━━━━━━━━┃━━━  自动化流量 18%
+  IP 属性        原生   机房
 
 二、多源 IP 类型
-  数据源         位置                                    使用类型    公司类型
-  IPLocate       JP · Tokyo                              机房        商业
-  ipapi.is       JP · Shinagawa                          机房        机房
-  ipdata         JP · Higashi-Ōsaka                      机房        商业
-  Abstract API   JP · Tokyo                              机房        –
-  IPinfo         JP · Tokyo                              机房        –
-  Proxycheck     JP · Tokyo                              商业        –
+  数据源         位置                 使用类型   公司类型
+  IPLocate       JP · Tokyo           机房       商业
+  ipapi.is       JP · Shinagawa       机房       机房
+  ipdata         JP · Higashi-Ōsaka   机房       商业
+  Abstract API   JP · Tokyo           机房       –
+  IPinfo         JP · Tokyo           机房       –
+  Proxycheck     JP · Tokyo           商业       –
   IPGeolocation  本次额度暂不可用
   Ipregistry     本次调用失败
 
-三、风险评分
+三、风险评分与风险因子
   IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━  良好
   IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
 
-  数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
-  风险值  35        8         62      中            0           0
-
-四、风险因子
-  数据源         托管   代理   VPN    Tor    中转   滥用   机器人
-  IPLocate       ●      ·      ·      ·      –      ·      –
-  ipapi.is       ●      ·      ·      ·      –      ·      –
-  ipdata         ●      ●      –      ·      ·      ●      –
-  Abstract API   ●      ·      ·      ·      ·      –      –
-  Proxycheck     –      ·      ·      –      –      –      –
-  AbuseIPDB      –      –      –      –      –      ·      –
+  数据源        风险值  托管  代理  VPN  Tor  中转  滥用  机器人
+  IPLocate      35      ●     ·     ·    ·    –     ·     –
+  ipapi.is      8       ●     ·     ·    ·    –     ·     –
+  ipdata        62      ●     ●     –    ·    ·     ●     –
+  Abstract API  中      ●     ·     ·    ·    ·     –     –
+  Proxycheck    0       –     ·     ·    –    –     –     –
+  AbuseIPDB     0       –     –     –    –    –     ·     –
   ● 命中  · 未命中  – 该来源不提供
 
-五、AI 与流媒体 · IPv4
-  ChatGPT            支持地区   CA
-  Claude             支持地区   CA
-  Gemini             可用       CA
-  Netflix            可用       CA
-  Disney+            可用       CA
-  YouTube Premium    可用       CA
-  TikTok             可用       CA
-  Prime Video        可用       CA
-  Reddit             可用       CA
+四、AI 与流媒体
+        ChatGPT   Claude    Gemini
+  状态  支持地区  支持地区  可用
+  地区  JP        JP        JP
 
-六、出站 25 端口
+        Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  状态  可用     可用     可用             可用    可用         可用
+  地区  JP       JP       JP               JP      JP           JP
+
+五、出站 25 端口
    可用
 
 ────────────────────────────────────────────────────────────────────────────────
-  完整结果  https://iplense.cc/zh/ip/203.0.113.45
-  关于 CLI  https://iplense.cc/zh/cli
+  报告链接    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg （保留 30 天）
+  关于命令行  https://iplense.cc/zh/cli
 ```
 
 ## 开发
+
+测试还需要 Python 3（宽度与脱敏断言）及 shellcheck。
 
 - `iplense.sh` 支持 bash 3.2 及以上。
 - 测试使用桩版 `curl` 与固定数据，不访问网络：

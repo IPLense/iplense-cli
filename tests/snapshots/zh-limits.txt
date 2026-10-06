@@ -1,26 +1,36 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                             IPLense 本机 IP 体检                             │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.1.1
+  命令行 1.2.0
 
   IPv4  本 IP 检测次数已达上限，7 分钟后再试
   IPv6  今日检测次数已达上限，3 小时后再试
 
-一、AI 与流媒体 · IPv4
-  ChatGPT           –      CA
-  Claude            –      CA
-  Gemini            可用   CA
-  Netflix           可用   CA
-  Disney+           可用   CA
-  YouTube Premium   可用   CA
-  TikTok            可用   CA
-  Prime Video       可用   CA
-  Reddit            可用   CA
+一、AI 与流媒体
+  IPv4
+        ChatGPT  Claude  Gemini
+  状态  –        –       可用
+  地区  CA       CA      CA
+
+        Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  状态  可用     可用     可用             可用    可用         可用
+  地区  CA       CA       CA               CA      CA           CA
+
+  IPv6
+        ChatGPT  Claude  Gemini
+  状态  –        –       可用
+  地区  CA       CA      CA
+
+        Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
+  状态  可用     可用     可用             可用    可用         可用
+  地区  CA       CA       CA               CA      CA           CA
 
 二、出站 25 端口
-   可用
+  IPv4   可用
+  IPv6   可用
 
 ────────────────────────────────────────────────────────────────────────────────
-  关于 CLI  https://iplense.cc/zh/cli
+  报告链接    未取得报告令牌，请重新自检
+  关于命令行  https://iplense.cc/zh/cli
 
 [exit 1]

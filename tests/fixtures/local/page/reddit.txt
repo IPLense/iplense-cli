@@ -1,0 +1,2 @@
+200 https://www.reddit.com/svc/shreddit/reddit-chat
+<shreddit-app country="JP"></shreddit-app>

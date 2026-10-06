@@ -5,12 +5,17 @@ Usage: bash <(curl -sL https://iplense.cc/cli) [options]
   -6         IPv6 only
   -l zh|en   Output language (cn = zh; default from LANG)
   -j         JSON output
+  -f         Full IP, network range (with name) and reverse DNS
+  -p         Skip report creation and local-result upload
   -o FILE    Also save the output to FILE
   -h         Show this help
   -V         Show the version
 
 Sends one request per IP family to iplense.cc; the server sees only the connection IP.
-Local checks send 1-3 requests to each platform; Disney+ registers an anonymous device. Results stay here.
+Local checks send 1-3 requests per family to each platform; Disney+ registers an anonymous device.
+Reports upload self-check tokens, version, language, nine platform statuses and regions, port 25 status,
+and whether the exit differs and its masked IP. Only masked reports are stored, for 30 days.
+Anyone with the link can view it. -p or -j skips reports; -f queries system DNS for the checked IP's PTR.
 Needs no root, installs nothing, and writes no file except the one named with -o.
 
 [exit 0]

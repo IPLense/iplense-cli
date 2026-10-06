@@ -1,12 +1,13 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.1.1
+  CLI 1.2.0
 
   IPv4  No connection
   IPv6  No connection
 
 ────────────────────────────────────────────────────────────────────────────────
+  Report link    No report token; run the self-check again
   About the CLI  https://iplense.cc/en/cli
 Cannot reach iplense.cc
 

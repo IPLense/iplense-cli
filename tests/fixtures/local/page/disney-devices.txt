@@ -1,0 +1,2 @@
+200 https://disney.api.edge.bamgrid.com/devices
+{"grant_type":"urn:ietf:params:oauth:grant-type:jwt-bearer","assertion":"stub-assertion"}

@@ -2,6 +2,8 @@
 
 [中文说明](README.zh-CN.md)
 
+Version 1.2.0 masks IP addresses by default and generates a report retained for 30 days. Use `-p` to keep local results on this machine.
+
 Check this machine's own public IP from a terminal: ownership, network type, purity risk and multi-source risk from
 [IPLense](https://iplense.cc), plus what AI and streaming platforms and a mail server answer this machine.
 
@@ -27,7 +29,9 @@ Then run `bash iplense.sh`. The same file is attached to each release with `SHA2
 | --- | --- |
 | `-4` / `-6` | Check IPv4 or IPv6 only (default: both) |
 | `-l zh\|en` | Output language; `cn` is the same as `zh` (default from `LANG`) |
-| `-j` | JSON output |
+| `-f` | Full IP, network range (with name) and reverse DNS |
+| `-p` | Skip report creation and local-result upload |
+| `-j` | JSON output; no report upload |
 | `-o FILE` | Also save the output to FILE (without colours) |
 | `-h` / `-V` | Help / version |
 
@@ -59,12 +63,12 @@ backgrounds.
 
 ## What it checks
 
-- **This IP** (from iplense.cc): ASN, operator and location; the IPLense score, purity risk value and network type; and
+- **This IP** (from iplense.cc): ASN, operator, location, ASN human/automated traffic and registration registry; the IPLense score, purity risk value and network type; and
   each data source's location, usage and company type, risk value and risk factors.
-- **Local checks** (from this machine, over IPv4 on a dual-stack machine):
+- **Local checks** (from this machine, separately over each reachable IP family; JSON keeps the first family's local object):
   - ChatGPT and Claude: the region each platform sees, against their official supported-region lists;
   - Gemini, Netflix, Disney+, YouTube Premium, TikTok, Prime Video and Reddit: available or not, and the region;
-  - outbound port 25: whether a public mail server (Gmail's MX) answers.
+  - outbound port 25: whether Gmail's MX returns a `220` greeting. DNS is resolved before connecting. Refusal, a five-second connection timeout or no `220` within five seconds of connection is unavailable; an unresolved server or Bash without network redirections is a failed check.
 
   A check that gets no clear answer says "Check failed"; it never guesses.
 
@@ -74,90 +78,90 @@ backgrounds.
   `IPLense-CLI/<version>`. It looks up only the address the request comes from; nothing about this machine is sent.
 - **Data sources**: iplense.cc asks its IP data providers about that address, as a lookup on the website does.
 - **Platforms checked**:
-  - each receives one to three ordinary requests with a desktop browser User-Agent, and sees this machine's IP;
+  - each receives one to three ordinary requests per IP family with a desktop browser User-Agent, and sees this machine's IP;
   - the script does not log in or submit any account details;
   - the Disney+ check registers an anonymous device with a generic description (browser, Chrome, Windows), as the open-source
     scripts credited below do.
 - **Port 25**: one connection to Gmail's mail server. The script reads its greeting and says `QUIT`; no mail is sent.
-- Local check results stay on this machine; they are not uploaded.
+- **Reports**: by default, the script sends self-check tokens, client version, language, nine platform statuses and regions, port 25 status, and whether the exit differs and its masked IP. The site stores only masked reports for 30 days. Anyone with the link can view them. `-p` or `-j` skips report creation and local-result upload. `-f` never sends a complete IP in the report request.
+- **Reverse DNS**: `-f` asks the system resolver for the checked address's PTR record.
 
 See the [IPLense privacy policy](https://iplense.cc/en/privacy) for how iplense.cc handles the lookups.
 
 ## Limits
 
-- The self-check allows 3 lookups per IP per 10 minutes and 10 per day.
+- The self-check allows 20 lookups per IP per 10 minutes, with no per-IP daily limit.
 - One IP's result is kept for an hour, so running the script again within the hour returns the same result without
   asking the data providers again.
 - When a limit is reached, the script says when to try again.
 
 ## Example
 
-Example output with documentation addresses (`203.0.113.0/24`), IPv4 only, 80 columns (risk values stand side by side
-when they fit on one line):
+Five sections, IPv4 only, 80 columns. The documentation address is masked; location and platform regions are JP:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
+  203.0.*.* · CLI 1.2.0 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64500 · Example Cloud Networks   IDC
   Operator       Example Cloud Networks LLC   IDC
   Location       Japan · Tokyo
-  Registered in  JP
+  Registered in  JP · APNIC
+  ASN traffic    Human 82%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18%
   IP Property     Native   Datacenter
 
 2. Multi-source IP Types
-  Source         Location                                Usage       Company
-  IPLocate       JP · Tokyo                              IDC         Business
-  ipapi.is       JP · Shinagawa                          IDC         IDC
-  ipdata         JP · Higashi-Ōsaka                      IDC         Business
-  Abstract API   JP · Tokyo                              IDC         –
-  IPinfo         JP · Tokyo                              IDC         –
-  Proxycheck     JP · Tokyo                              Business    –
+  Source         Location             Usage       Company
+  IPLocate       JP · Tokyo           IDC         Business
+  ipapi.is       JP · Shinagawa       IDC         IDC
+  ipdata         JP · Higashi-Ōsaka   IDC         Business
+  Abstract API   JP · Tokyo           IDC         –
+  IPinfo         JP · Tokyo           IDC         –
+  Proxycheck     JP · Tokyo           Business    –
   IPGeolocation  Quota temporarily unavailable
   Ipregistry     This call failed
 
-3. Risk scores
+3. Risk scores and factors
   IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
   IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
-  Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
-  Risk value  35        8         62      Medium        0           0
-
-4. Risk factors
-  Source         Hosting Proxy   VPN     Tor     Relay   Abuse   Bot
-  IPLocate       ●       ·       ·       ·       –       ·       –
-  ipapi.is       ●       ·       ·       ·       –       ·       –
-  ipdata         ●       ●       –       ·       ·       ●       –
-  Abstract API   ●       ·       ·       ·       ·       –       –
-  Proxycheck     –       ·       ·       –       –       –       –
-  AbuseIPDB      –       –       –       –       –       ·       –
+  Source        Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
+  IPLocate      35          ●        ·      ·    ·    –      ·      –
+  ipapi.is      8           ●        ·      ·    ·    –      ·      –
+  ipdata        62          ●        ●      –    ·    ·      ●      –
+  Abstract API  Medium      ●        ·      ·    ·    ·      –      –
+  Proxycheck    0           –        ·      ·    –    –      –      –
+  AbuseIPDB     0           –        –      –    –    –      ·      –
   ● Detected  · Not detected  – Not provided
 
-5. AI and streaming · IPv4
-  ChatGPT            Supported region   CA
-  Claude             Supported region   CA
-  Gemini             Available          CA
-  Netflix            Available          CA
-  Disney+            Available          CA
-  YouTube Premium    Available          CA
-  TikTok             Available          CA
-  Prime Video        Available          CA
-  Reddit             Available          CA
+4. AI and streaming
+          ChatGPT           Claude            Gemini
+  Status  Supported region  Supported region  Available
+  Region  JP                JP                JP
 
-6. Outbound port 25
+          Netflix    Disney+    YouTube Premium
+  Status  Available  Available  Available
+  Region  JP         JP         JP
+
+          TikTok     Prime Video  Reddit
+  Status  Available  Available    Available
+  Region  JP         JP           JP
+
+5. Outbound port 25
    Available
 
 ────────────────────────────────────────────────────────────────────────────────
-  Full result    https://iplense.cc/en/ip/203.0.113.45
+  Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
   About the CLI  https://iplense.cc/en/cli
 ```
 
 ## Development
 
 - `iplense.sh` runs on bash 3.2 and later.
+- Test dependencies: Python 3 (width/privacy assertions) and shellcheck.
 - Tests use a stub `curl` and fixtures, and never reach the network:
 
 ```bash

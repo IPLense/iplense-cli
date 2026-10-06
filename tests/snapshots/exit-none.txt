@@ -1,26 +1,30 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.1.1
+  CLI 1.2.0
 
   IPv4  The self-check is switched off
   IPv6  No connection
 
-1. AI and streaming · IPv4
-  ChatGPT           –           CA
-  Claude            –           CA
-  Gemini            Available   CA
-  Netflix           Available   CA
-  Disney+           Available   CA
-  YouTube Premium   Available   CA
-  TikTok            Available   CA
-  Prime Video       Available   CA
-  Reddit            Available   CA
+1. AI and streaming
+  IPv4
+          ChatGPT  Claude  Gemini
+  Status  –        –       Available
+  Region  CA       CA      CA
+
+          Netflix    Disney+    YouTube Premium
+  Status  Available  Available  Available
+  Region  CA         CA         CA
+
+          TikTok     Prime Video  Reddit
+  Status  Available  Available    Available
+  Region  CA         CA           CA
 
 2. Outbound port 25
-   Available
+  IPv4   Available
 
 ────────────────────────────────────────────────────────────────────────────────
+  Report link    No report token; run the self-check again
   About the CLI  https://iplense.cc/en/cli
 
 [exit 1]
