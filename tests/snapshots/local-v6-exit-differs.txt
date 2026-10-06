@@ -1,7 +1,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  2001:db8:4860:1234:5678:9abc:def0:1 · CLI 1.1.0 · 2026-10-05 01:00 UTC
+  2001:db8:4860:1234:5678:9abc:def0:1 · CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64501 · Beispiel Telekom   ISP
@@ -17,7 +17,7 @@
   IPinfo    DE · München    ISP     –
 
 3. Risk scores
-  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━
+  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━  Excellent
   IP Purity Risk value       4/100  ┃━━━━━━━━━━━━━━━━━━━  Low
 
   Source      IPLocate  ipapi.is

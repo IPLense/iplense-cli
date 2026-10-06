@@ -147,6 +147,28 @@ check "NO_COLOR: no escape codes" no_controls
 gemini_region() { grep -q "^  Gemini  *[^ ].*  $1\$" "tests/snapshots/$2.txt"; }
 check "Gemini CAN is shown as CA" gemini_region CA en-local-available
 check "an unknown three-letter code is shown as it is" gemini_region XQZ zh-local-mixed
+
+# One local check's own answer ("status region") with the platform pages of tests/fixtures/local/SCENARIO.
+# shellcheck disable=SC2016 # expanded by the inner bash, not here.
+answer() { STUB_LOCAL=$1 bash -c 'eval "$(sed "\$d" "$0")"; LOCAL_FAMILY=4; "check_$1"' "$ROOT/iplense.sh" "$2"; }
+answers() { [ "$(answer "$1" "$2")" = "$3" ]; }
+check "Gemini: NotebookLM's redirect to notebook.google.com is available" answers available gemini 'available CA'
+check "Gemini: NotebookLM's location=unsupported is unavailable" answers unavailable gemini 'unavailable'
+check "Gemini: a restricted region on the page outranks the old flag and NotebookLM" answers gemini-restricted gemini 'unavailable CN'
+check "Gemini: Google's sorry page is a failed check" answers gemini-sorry gemini 'failed'
+check "Gemini: HTTP 451 is unavailable" answers gemini-blocked-status gemini 'unavailable'
+check "Gemini: the old false flag alone is unavailable" answers gemini-false-flag gemini 'unavailable US'
+check "Gemini: the old true flag without a verdict is available" answers mixed gemini 'available XQZ'
+check "Gemini: a page with neither a flag nor a verdict is a failed check" answers gemini-silent gemini 'failed'
+check "YouTube: an offer with one stated region is available there" answers available youtube 'available CA'
+check "YouTube: a redirect to google.cn is unavailable" answers youtube-cn youtube 'unavailable'
+check "YouTube: the not-available notice outranks an offer" answers youtube-region-text youtube 'unavailable'
+check "YouTube: an offer with two stated regions shows none" answers youtube-two-regions youtube 'available'
+check "YouTube: ad-free text without an offer is a failed check" answers youtube-no-offer youtube 'failed'
+check "YouTube: a consent page is a failed check" answers mixed youtube 'failed'
+# shellcheck disable=SC2016 # expanded by the inner shells, not here.
+check "Gemini asks NotebookLM without following the redirect, over the same family" \
+	sh -c ': >"$1"; STUB_LOCAL=available bash -c '"'"'eval "$(sed "\$d" "$0")"; LOCAL_FAMILY=6; check_gemini >/dev/null'"'"' "$2"; grep -q -- "^-6 .*notebooklm.google.com" "$1" && ! grep "notebooklm" "$1" | grep -q -- " -L "' _ "$STUB_LOG" "$ROOT/iplense.sh"
 # A proxy that carries the IPv6 request out over IPv4: the IPv6 line says so instead of repeating the IPv4 result.
 for lang in en zh; do run "$lang-family-mismatch-line" "LANG=${lang}_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_V6=family-mismatch.kv:200"; done
 # The address it arrived from is named only when the header does not show it already (no IPv4 result here).

@@ -3,7 +3,8 @@
 # Self-check: STUB_V4 / STUB_V6 name a fixture ("name:status", e.g. "full-v4.kv:200"); unset means that family has no
 # connection. Platform pages: STUB_LOCAL names a directory under fixtures/local whose <key>.txt holds "<code> <final URL>"
 # on its first line and the body after it; a missing file is a failed connection. A trace's ip6= line is its ip= over IPv6.
-family=4 format=kv lang=en url='' effective=0
+# A request for the first redirect only (-w ...redirect_url) gets that first line, "<code> <redirect URL>", and no body.
+family=4 format=kv lang=en url='' effective=0 redirect=0
 for arg in "$@"; do
 	case $arg in
 	-4) family=4 ;;
@@ -13,6 +14,7 @@ for arg in "$@"; do
 	case $arg in *format=json*) format=json ;; esac
 	case $arg in *lang=zh*) lang=zh ;; esac
 	case $arg in *url_effective*) effective=1 ;; esac
+	case $arg in *redirect_url*) redirect=1 ;; esac
 done
 fixtures=$(dirname "$0")/../fixtures
 [ -n "${STUB_LOG-}" ] && printf '%s\n' "$*" >>"$STUB_LOG"
@@ -38,12 +40,13 @@ https://iplense.cc/*)
 *chatgpt.com/cdn-cgi/trace) key=chatgpt ;;
 *claude.ai/cdn-cgi/trace) key=claude ;;
 *gemini.google.com*) key=gemini ;;
+*notebooklm.google.com*) key=notebooklm ;;
 *netflix.com/title/81280792) key=netflix-original ;;
 *netflix.com/title/70143836) key=netflix-licensed ;;
 *bamgrid.com/devices) key=disney-devices ;;
 *bamgrid.com/token) key=disney-token ;;
 *bamgrid.com/graph/*) key=disney-graphql ;;
-*youtube.com/premium) key=youtube ;;
+*youtube.com/premium*) key=youtube ;;
 *tiktok.com/*) key=tiktok ;;
 *primevideo.com*) key=prime ;;
 *reddit.com/*) key=reddit ;;
@@ -52,6 +55,7 @@ esac
 page=$fixtures/local/${STUB_LOCAL-}/$key.txt
 [ -n "${STUB_LOCAL-}" ] && [ -f "$page" ] || exit 7
 head_line=$(head -n 1 "$page")
+[ "$redirect" = 1 ] && { printf '%s' "$head_line"; exit 0; }
 # A trace answers in the family it was asked over, as the real one does: ip6= stands in for ip= over IPv6.
 if [ "$family" = 6 ]; then
 	tail -n +2 "$page" | sed -e '/^ip=/d' -e 's/^ip6=/ip=/'

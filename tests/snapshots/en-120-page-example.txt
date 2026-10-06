@@ -1,7 +1,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                  IPLense self-check                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
+  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64500 · Example Cloud Networks   IDC
@@ -22,7 +22,7 @@
   Ipregistry     This call failed
 
 3. Risk scores
-  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
   IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
   Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB

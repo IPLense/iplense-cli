@@ -1,7 +1,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.1.0
+  CLI 1.1.1
 
   IPv4  Response format not supported; get the latest script
   IPv6  No connection

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1
+
+Gemini and YouTube Premium checks, and the score's grade word.
+
+- Gemini: Google now serves pages with and without the old experiment flags in every region, so the page alone no longer tells. The check asks NotebookLM over the same IP family without following its redirect: `location=unsupported` is unavailable, a redirect to notebook.google.com is available. A region Google restricts (AFG, CHN, RUS, BLR, CUB, IRN, PRK, SYR) stated on the page is unavailable before anything else, a Google sorry page is a failed check, HTTP 403 or 451 is unavailable, and the old flags remain a fallback. The region is shown when the page states exactly one.
+- YouTube Premium: available only when the page carries the purchase button or offer cards (`premiumPurchaseButtonRenderer`, `lpOfferCardViewModel`), with the region shown when the page states exactly one; the not-available notice (country or region) and a redirect to google.cn are unavailable; a consent or sign-in page is a failed check. The page is requested with `?hl=en`.
+- The IPLense score carries its grade word (Excellent, Good, Low), as on the result page, so a higher score does not read like a higher risk value. The self-check sends these three words; every key earlier clients read is unchanged.
+
 ## 1.1.0
 
 Output redesign.

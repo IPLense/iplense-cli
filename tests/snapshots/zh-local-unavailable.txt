@@ -1,7 +1,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                             IPLense 本机 IP 体检                             │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
+  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 一、基础信息
   ASN          AS64500 · Example Cloud Networks   IDC
@@ -22,7 +22,7 @@
   Ipregistry     本次调用失败
 
 三、风险评分
-  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━
+  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━  良好
   IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
 
   数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
@@ -41,7 +41,7 @@
 五、AI 与流媒体 · IPv4
   ChatGPT           不在支持地区   CN
   Claude            不在支持地区   CN
-  Gemini            检测失败
+  Gemini            不可用
   Netflix           不可用
   Disney+           不可用
   YouTube Premium   不可用

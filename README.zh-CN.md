@@ -42,7 +42,7 @@ sha256sum iplense.sh
 | 机房类型、机房、其他非原生、获取失败、不可用、不在支持地区 | `.type-badge.state-idc`（`--red` `#b72f3d`）、`.state-error`（`#a82332`）、`.outbound-ai-region.is-unsupported` | 红底（41） |
 | 商业类型、广播、专业模式“其他”类型、Netflix 仅自制内容 | `.type-badge.state-business`、`.semantic-badge.state-warning`、`.pro-type-table .canonical-badge.state-unknown`、`.tool-state.is-warning`（`--amber` `#a15c08`） | 黄底（43） |
 | 快速模式“Unknown”类型、检测失败 | `.semantic-badge.state-unknown`（`#596779`）、`.mini-cell.is-failed`（淡化） | 亮黑底（100） |
-| IPLense 评分：80 及以上 / 60–79 / 60 以下 | `.score-ring.score-high` / `medium` / `low`（`query_controller.ts`） | 绿 / 黄 / 红（32 / 33 / 31），附同样分段的 20 格刻度 |
+| IPLense 评分：80 及以上 / 60–79 / 60 以下 | `.score-ring.score-high` / `medium` / `low`（`query_controller.ts`） | 绿 / 黄 / 红（32 / 33 / 31），附同样分段的 20 格刻度和结果页的等级词（优秀 / 良好 / 较低） |
 | 风险值：20 及以下 / 21–50 / 50 以上（纯净度与各数据源） | `.pro-risk-number.is-low` / `medium` / `high`（`query_controller.ts`）、`.purity-segment-*`（`QuickPurityCalculator`） | 绿 / 黄 / 红；纯净度附刻度与等级字 |
 | 风险因子：命中 / 未命中 / 不提供 | `.risk-cell.is-detected` / `.is-clear` / `.is-none` | 红 / 绿 / 亮黑（31 / 32 / 90） |
 | 额度暂不可用 / 调用失败 | `.pro-state[data-state="quota"]` / `[data-state="error"]` | 黄 / 红（33 / 31） |
@@ -87,7 +87,7 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                             IPLense 本机 IP 体检                             │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
+  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 一、基础信息
   ASN          AS64500 · Example Cloud Networks   IDC
@@ -108,7 +108,7 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
   Ipregistry     本次调用失败
 
 三、风险评分
-  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━
+  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━  良好
   IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
 
   数据源  IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB

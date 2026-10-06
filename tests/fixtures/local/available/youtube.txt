@@ -1,2 +1,2 @@
-200 https://www.youtube.com/premium
-<html>{"contentRegion":"CA"} Enjoy ad-free videos</html>
+200 https://www.youtube.com/premium?hl=en
+<html>{"INNERTUBE_CONTEXT_GL":"CA","contentRegion":"CA"} "premiumPurchaseButtonRenderer":{} Enjoy ad-free videos</html>

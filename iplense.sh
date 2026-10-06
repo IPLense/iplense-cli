@@ -22,7 +22,7 @@
 # public mail server; those see the connection IP. Nothing else about this machine is sent, and results stay here.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.1.0
+VERSION=1.1.1
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -632,7 +632,10 @@ render_risk() {
 	lw=$((lw + 2))
 	vw=$(max 6 "$(width "$(l colRiskValue)")")
 	if [ -n "$score" ]; then
-		printf '  %s%s  %s\n' "$(cell "IPLense $(l score)" "$lw" dim)" "$(cell "$score" "$vw" "$(score_tone "$score")" r)" "$(scale "$score" score)"
+		# The score's grade word, as the result page shows it, so a higher score does not read like a higher risk value.
+		if [ "$score" -ge 80 ]; then level=high; elif [ "$score" -ge 60 ]; then level=medium; else level=low; fi
+		printf '  %s%s  %s  %s\n' "$(cell "IPLense $(l score)" "$lw" dim)" "$(cell "$score" "$vw" "$(score_tone "$score")" r)" \
+			"$(scale "$score" score)" "$(paint "$(score_tone "$score")" "$(l "grade_$level")")"
 	fi
 	if [ -n "$purity" ]; then
 		case $(v quick.purity.state) in good) tone=pos level=low ;; average) tone=neu level=medium ;; *) tone=neg level=high ;; esac
@@ -896,6 +899,46 @@ match() {
 	if [[ $PAGE =~ $re ]]; then printf '%s' "${BASH_REMATCH[1]}"; fi
 }
 
+# Each distinct capture GROUP of a regular expression in PAGE, one per line, in the order they first appear. grep finds the
+# matches, since cutting a page of several hundred kilobytes with bash's own patterns takes minutes on bash 3.2.
+matches() {
+	local re=$1 group=$2 line seen=$'\n'
+	while IFS= read -r line; do
+		[[ $line =~ $re ]] || continue
+		case $seen in *$'\n'"${BASH_REMATCH[$group]}"$'\n'*) ;; *) seen+=${BASH_REMATCH[$group]}$'\n' ;; esac
+	done < <(printf '%s' "$PAGE" | grep -oE -- "$re" 2>/dev/null)
+	printf '%s' "${seen#$'\n'}"
+}
+
+# The only line of a list, or nothing when it has none or several.
+single() {
+	local list=${1%$'\n'}
+	case $list in *$'\n'*) ;; *) printf '%s' "$list" ;; esac
+}
+
+# A URL's host in lower case (no user, port, path or query), and its path (no query or fragment).
+url_host() {
+	local authority=${1#*://}
+	[ "$authority" = "$1" ] && return
+	authority=${authority%%[/?#]*}
+	authority=${authority##*@}
+	printf '%s' "${authority%%:*}" | tr '[:upper:]' '[:lower:]'
+}
+url_path() {
+	local rest=${1#*://} path=/
+	case $rest in */*) path=/${rest#*/} ;; esac
+	printf '%s' "${path%%[?#]*}"
+}
+
+# The first answer to a request over the local checks' family, without following a redirect: "<code> <redirect URL>",
+# empty on a failed connection.
+first_hop() {
+	local out
+	out=$(curl "-$LOCAL_FAMILY" -sS -o /dev/null --connect-timeout 8 --max-time 10 -A "$UA_BROWSER" -H 'Accept-Language: en' \
+		-w '%{http_code} %{redirect_url}' "$1" 2>/dev/null) || return 0
+	[ "${out%% *}" = 000 ] || printf '%s' "$out"
+}
+
 # A check's answer: "status region", status one of available, unavailable, failed, supported, unsupported, originals_only.
 # The AI checks add a second line with the address the platform's trace saw (its ip= field), the exit the platforms see.
 check_ai() {
@@ -912,10 +955,36 @@ check_ai() {
 	[ -n "$exit" ] && printf '\n%s' "$exit"
 }
 
-# Gemini (RegionRestrictionCheck): an undocumented page flag and the country Google states; no flag is a failed check.
+# Gemini: Google serves pages with and without its old experiment flags in every region, so the page alone cannot tell. Google's
+# own location verdict is NotebookLM's first redirect, asked over the same family: to location=unsupported where it is not
+# offered, to notebook.google.com where it is. A region Google restricts, stated on the page, outranks every other signal
+# (a China-located server once showed CHN with the old flag set and no Gemini). The region shown is the page's, when it
+# states exactly one.
 check_gemini() {
-	page https://gemini.google.com
-	if [[ $PAGE == *'45631641,null,true'* ]]; then printf 'available %s' "$(alpha2 "$(match ',2,1,200,"([A-Z]{3})"')")"; else printf 'failed'; fi
+	local regions region blocked verdict target='' flag=''
+	page https://gemini.google.com/
+	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
+	case $(url_path "${PAGE_STATUS#* }") in /sorry | /sorry/*) printf 'failed'; return ;; esac
+	case ${PAGE_STATUS%% *} in 403 | 451) printf 'unavailable'; return ;; 2??) ;; *) printf 'failed'; return ;; esac
+	[ -z "$PAGE" ] && { printf 'failed'; return; }
+	regions=$(matches '(,2,1,200,|\[1,null,null,[0-9]+,[0-9]+,)\\?"([A-Z]{3})\\?"' 2)
+	for blocked in AFG CHN RUS BLR CUB IRN PRK SYR; do
+		case $'\n'$regions$'\n' in *$'\n'$blocked$'\n'*) printf 'unavailable %s' "$(alpha2 "$blocked")"; return ;; esac
+	done
+	region=$(single "$regions")
+	[ -n "$region" ] && region=$(alpha2 "$region")
+	if [[ $PAGE == *'45631641,null,true'* || $PAGE == *'45617354,null,true'* ]]; then flag=true
+	elif [[ $PAGE == *'45631641,null,false'* || $PAGE == *'45617354,null,false'* ]]; then flag=false; fi
+	verdict=$(first_hop https://notebooklm.google.com/)
+	case ${verdict%% *} in 3??) target=${verdict#* } ;; esac
+	if [[ $target == *location=unsupported* ]] || [ "$flag" = false ]; then printf 'unavailable%s' "${region:+ $region}"
+	elif [ "$flag" = true ]; then printf 'available%s' "${region:+ $region}"
+	else
+		case $(url_host "$target") in
+		notebook.google.com | notebooklm.google.com) printf 'available%s' "${region:+ $region}" ;;
+		*) printf 'failed' ;;
+		esac
+	fi
 }
 
 # The two-letter code for a three-letter one; a code not in the list is shown as it is.
@@ -970,14 +1039,28 @@ check_disney() {
 	else printf 'failed'; fi
 }
 
-# YouTube Premium (IPQuality): the page states the region and the offer, or says Premium is not available. A consent page
-# (EU) is a failed check: no consent cookie is made up to get past it.
+# YouTube Premium: only a page where Premium is sold carries the purchase button or offer cards ("ad-free" also appears on the
+# not-available page). YouTube gives a US content region to places where Premium is not sold, so the region is shown only
+# next to an offer, and only when the page states one. A consent or sign-in page is a failed check: no consent cookie is
+# made up to get past it.
 check_youtube() {
-	local region
-	page https://www.youtube.com/premium
-	region=$(match '"contentRegion":"([A-Z]{2})"')
-	if [[ $PAGE == *'Premium is not available in your country'* ]]; then printf 'unavailable'
-	elif [ -n "$region" ] && [[ $PAGE == *ad-free* ]]; then printf 'available %s' "$region"
+	local unavailable=''
+	page 'https://www.youtube.com/premium?hl=en'
+	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
+	case $(url_host "${PAGE_STATUS#* }") in
+	google.cn | *.google.cn) printf 'unavailable'; return ;;
+	consent.youtube.com | accounts.google.com) printf 'failed'; return ;;
+	esac
+	case ${PAGE_STATUS%% *} in 2??) ;; *) printf 'failed'; return ;; esac
+	[ -z "$PAGE" ] && { printf 'failed'; return; }
+	shopt -s nocasematch
+	[[ $PAGE == *'premium is not available in your country'* || $PAGE == *'premium is not available in your region'* ]] && unavailable=1
+	shopt -u nocasematch
+	if [ -n "$unavailable" ]; then printf 'unavailable'
+	elif [[ $PAGE == *premiumPurchaseButtonRenderer* || $PAGE == *lpOfferCardViewModel* ]]; then
+		local region
+		region=$(single "$(matches '"(INNERTUBE_CONTEXT_GL|contentRegion|GL)" *: *"([A-Z]{2})"' 2)")
+		printf 'available%s' "${region:+ $region}"
 	else printf 'failed'; fi
 }
 

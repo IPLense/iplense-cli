@@ -2,7 +2,7 @@
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
   203.0.113.45 · 2001:db8:4860:1234:5678:9abc:def0:1
-  CLI 1.1.0 · 2026-10-05 01:00 UTC
+  CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 1. Basics
   IPv4
@@ -39,14 +39,14 @@
 
 3. Risk scores
   IPv4
-  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
   IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
   Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
   Risk value  35        8         62      Medium        0           0
 
   IPv6
-  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━
+  IPLense Score                 91  ━━━━━━━━━━━━━━━━━━┃━  Excellent
   IP Purity Risk value       4/100  ┃━━━━━━━━━━━━━━━━━━━  Low
 
   Source      IPLocate  ipapi.is

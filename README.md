@@ -47,7 +47,7 @@ by hue so that every common terminal can show it. Types, levels and check result
 | IDC type, Datacenter, other natures, failed field, unavailable, not a supported region | `.type-badge.state-idc` (`--red` `#b72f3d`), `.state-error` (`#a82332`), `.outbound-ai-region.is-unsupported` | red background (41) |
 | Business type, Broadcast, Professional "Other" type, Netflix originals only | `.type-badge.state-business`, `.semantic-badge.state-warning`, `.pro-type-table .canonical-badge.state-unknown`, `.tool-state.is-warning` (`--amber` `#a15c08`) | yellow background (43) |
 | Quick "Unknown" type, check failed | `.semantic-badge.state-unknown` (`#596779`), `.mini-cell.is-failed` (faded) | bright black background (100) |
-| IPLense score: 80 and up / 60–79 / below 60 | `.score-ring.score-high` / `medium` / `low` (`query_controller.ts`) | green / yellow / red (32 / 33 / 31), with a 20-cell scale in the same segments |
+| IPLense score: 80 and up / 60–79 / below 60 | `.score-ring.score-high` / `medium` / `low` (`query_controller.ts`) | green / yellow / red (32 / 33 / 31), with a 20-cell scale in the same segments and the result page's grade word (Excellent / Good / Low) |
 | Risk value: up to 20 / 21–50 / above 50 (purity and each source) | `.pro-risk-number.is-low` / `medium` / `high` (`query_controller.ts`), `.purity-segment-*` (`QuickPurityCalculator`) | green / yellow / red, the purity value with its scale and level |
 | Risk factor: detected / not detected / not provided | `.risk-cell.is-detected` / `.is-clear` / `.is-none` | red / green / bright black (31 / 32 / 90) |
 | Quota unavailable / call failed | `.pro-state[data-state="quota"]` / `[data-state="error"]` | yellow / red (33 / 31) |
@@ -99,7 +99,7 @@ when they fit on one line):
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  203.0.113.45 · CLI 1.1.0 · 2026-10-05 01:00 UTC
+  203.0.113.45 · CLI 1.1.1 · 2026-10-05 01:00 UTC
 
 1. Basics
   ASN            AS64500 · Example Cloud Networks   IDC
@@ -120,7 +120,7 @@ when they fit on one line):
   Ipregistry     This call failed
 
 3. Risk scores
-  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━
+  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
   IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
 
   Source      IPLocate  ipapi.is  ipdata  Abstract API  Proxycheck  AbuseIPDB
