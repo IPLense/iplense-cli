@@ -23,7 +23,7 @@
 # regions, port 25 status and a masked differing exit. Reports last 30 days; -p and -j skip creation.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.2.0
+VERSION=1.2.1
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -252,13 +252,14 @@ cell() {
 }
 
 # Colours, each the nearest of the 16 basic ANSI colours to the website's own (README "Colours"): pos green, neu yellow,
-# neg red, none bright black (unknown, failed, not provided); a style starting with b is a label on that background.
+# neg red, info blue (education and government), none bright black (unknown, failed, not provided); a style starting with b
+# is a label on that background.
 paint() {
 	if [ "$COLOR" = 1 ] && [ -n "$1" ] && [ -n "$2" ]; then
 		local code
 		case $1 in
 		pos) code=32 ;; neu) code=33 ;; neg) code=31 ;; none) code=90 ;; dim) code=2 ;; bold) code=1 ;; head) code='1;94' ;;
-		bpos) code='97;42' ;; bneu) code='30;43' ;; bneg) code='97;41' ;; bnone) code='97;100' ;; *) code=0 ;;
+		bpos) code='97;42' ;; bneu) code='30;43' ;; bneg) code='97;41' ;; binfo) code='97;44' ;; bnone) code='97;100' ;; *) code=0 ;;
 		esac
 		printf '\033[%sm%s\033[0m' "$code" "$2"
 	else
@@ -393,17 +394,28 @@ failure() {
 # A Professional type's label colour, as the website's multi-source type table shows it: ISP green, IDC and failure red,
 # Business and Unknown (shown as "Other") amber.
 type_style() {
-	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; *) printf bneu ;; esac
+	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; Education | Government) printf binfo ;; *) printf bneu ;; esac
 }
 
 # A Quick type (ASN and operator) as the web result card colours it, where Unknown is grey.
 quick_type_style() {
-	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; Business) printf bneu ;; *) printf bnone ;; esac
+	case $1 in ISP) printf bpos ;; IDC | Error) printf bneg ;; Business) printf bneu ;; Education | Government) printf binfo ;; *) printf bnone ;; esac
+}
+
+# A Quick type as the site's badge (quickType_ words, sent since 1.2.1); an older server's raw value otherwise.
+quick_type_text() {
+	local text
+	text=$(l "quickType_$1")
+	printf '%s' "${text:-$1}"
 }
 
 # A Professional type in the site's words.
 type_text() {
-	case $1 in ISP | IDC | Business | Unknown | Error) l "proType_$1" ;; '') printf '' ;; *) l proType_Unknown ;; esac
+	local text
+	[ -z "$1" ] && return 0
+	# The server sends a word for each type it can return, so a type added later shows without a new client.
+	text=$(l "proType_$1")
+	printf '%s' "${text:-$(l proType_Unknown)}"
 }
 
 # One of the site's words, sent with a result in the requested language: from the family being shown, else from whichever
@@ -533,13 +545,13 @@ render_basic() {
 	name=$(v quick.asn.name)
 	type=$(v quick.asn.type)
 	line=$(joined "AS$(v quick.asn.number)" "$name")
-	[ -n "$type" ] && line="$line  $(label "$type" 0 "$(quick_type_style "$type")")"
+	[ -n "$type" ] && line="$line  $(label "$(quick_type_text "$type")" 0 "$(quick_type_style "$type")")"
 	printf '  %s%s\n' "$(cell ASN "$lw" dim)" "$line"
 	company=$(v quick.company.name)
 	type=$(v quick.company.type)
 	if [ -n "$company" ] && [ "$company" != "$name" ]; then
 		line=$company
-		[ -n "$type" ] && line="$line  $(label "$type" 0 "$(quick_type_style "$type")")"
+		[ -n "$type" ] && line="$line  $(label "$(quick_type_text "$type")" 0 "$(quick_type_style "$type")")"
 		printf '  %s%s\n' "$(cell "$(l operator)" "$lw" dim)" "$line"
 	fi
 	detail "$(l location)" "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")" "$lw"
@@ -570,7 +582,7 @@ render_basic() {
 	nature=$(v quick.ipNature)
 	property=$(v quick.ipProperty)
 	case $nature in Native) nature_style=bpos ;; Broadcast) nature_style=bneu ;; Unknown | '') nature_style=bnone ;; *) nature_style=bneg ;; esac
-	case $property in Residential | HomeBroadband) property_style=bpos ;; Unknown | '') property_style=bnone ;; *) property_style=bneg ;; esac
+	case $property in Residential | HomeBroadband | Education | Government) property_style=bpos ;; Business) property_style=bneu ;; Unknown | '') property_style=bnone ;; *) property_style=bneg ;; esac
 	printf '  %s%s %s\n' "$(cell "$(l ipProperty)" "$lw" dim)" "$(label "$(l "nature_${nature:-Unknown}")" 0 "$nature_style")" \
 		"$(label "$(l "property_${property:-Unknown}")" 0 "$property_style")"
 }

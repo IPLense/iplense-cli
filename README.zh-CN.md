@@ -44,7 +44,8 @@ sha256sum iplense.sh
 | --- | --- | --- |
 | 家宽类型、原生、住宅 / 家宽、可用、支持地区 | `.type-badge.state-isp`、`.semantic-badge.state-success`（`#08754b`）、`.outbound-ai-region.is-supported`（`--green` `#12885a`） | 绿底（42） |
 | 机房类型、机房、其他非原生、获取失败、不可用、不在支持地区 | `.type-badge.state-idc`（`--red` `#b72f3d`）、`.state-error`（`#a82332`）、`.outbound-ai-region.is-unsupported` | 红底（41） |
-| 商业类型、广播、专业模式“其他”类型、Netflix 仅自制内容 | `.type-badge.state-business`、`.semantic-badge.state-warning`、`.pro-type-table .canonical-badge.state-unknown`、`.tool-state.is-warning`（`--amber` `#a15c08`） | 黄底（43） |
+| BIZ（商业）类型、商业 IP 属性、广播、专业模式“其他”类型、Netflix 仅自制内容 | `.type-badge.state-business`、`.semantic-badge.state-warning`、`.pro-type-table .canonical-badge.state-unknown`、`.tool-state.is-warning`（`--amber` `#a15c08`） | 黄底（43） |
+| EDU（教育）、GOV（政府）类型；对应的教育 IP、政府 IP 属性与住宅同为绿色 | `.type-badge.state-education` / `state-government`（`--blue-dark` `#0e52b9`） | 蓝底（44） |
 | 快速模式“Unknown”类型、检测失败 | `.semantic-badge.state-unknown`（`#596779`）、`.mini-cell.is-failed`（淡化） | 亮黑底（100） |
 | IPLense 评分：80 及以上 / 60–79 / 60 以下 | `.score-ring.score-high` / `medium` / `low`（`query_controller.ts`） | 绿 / 黄 / 红（32 / 33 / 31），附同样分段的 20 格刻度和结果页的等级词（优秀 / 良好 / 较低） |
 | 风险值：20 及以下 / 21–50 / 50 以上（纯净度与各数据源） | `.pro-risk-number.is-low` / `medium` / `high`（`query_controller.ts`）、`.purity-segment-*`（`QuickPurityCalculator`） | 绿 / 黄 / 红；纯净度附刻度与等级字 |

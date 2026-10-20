@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- Quick types follow the website: BIZ (business), EDU (education) and GOV (government) badges beside ISP and IDC, and the Business, Education and Government IP properties. EDU and GOV are blue; BIZ is yellow.
+- The type words come from the server (`quickType_` and `proType_` labels), so a type the site adds later shows without a new client. With an older server, the raw type is shown.
+
 ## 1.2.0
 
 - Five sections: basics with ASN traffic and registry; multi-source types; combined risk scores and seven factors; horizontal AI and streaming tables; outbound port 25. Long values wrap without truncation at 80 and 120 columns; a platform table too wide for the terminal splits into two. Chinese output names the client 命令行.

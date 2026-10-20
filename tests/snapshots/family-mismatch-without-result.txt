@@ -1,7 +1,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              IPLense self-check                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-  CLI 1.2.0
+  CLI 1.2.1
 
   IPv4  Check limit reached for this IP; try again in 7 min
   IPv6  No IPv6 exit: the request arrived over IPv4 (203.0.*.*)

@@ -3,6 +3,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
+VERSION = re.search(r'^VERSION=(\S+)$', open('iplense.sh').read(), re.M).group(1)
 
 root = Path(__file__).resolve().parent
 ansi = re.compile(r'\x1b\[[0-9;]*m')
@@ -31,7 +32,7 @@ for path in (root / 'snapshots').glob('*json*.txt'):
 
 request = json.loads((root / '.work/report.json').read_text())
 assert set(request) == {'schema', 'clientVersion', 'locale', 'reportTokens', 'local'}
-assert request['schema'] == 'cli-report/1' and request['clientVersion'] == '1.2.0'
+assert request['schema'] == 'cli-report/1' and request['clientVersion'] == VERSION
 assert len(request['local']) == len(request['reportTokens']) == 2
 platforms = {'chatgpt', 'claude', 'gemini', 'netflix', 'disney', 'youtube', 'tiktok', 'prime', 'reddit'}
 for local in request['local']:

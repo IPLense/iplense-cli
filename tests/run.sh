@@ -242,6 +242,13 @@ check "-f still sends only masked exit addresses" python3 -c 'import json,sys; d
 # Terminal output fits both widths and loses no part of a long fixture location.
 check "80/120 snapshots never exceed their terminal width" python3 tests/assert-output.py
 
+# 1.2.1: Quick and Professional organisation types use the server's words, so a later type needs no client release.
+run "org-types-zh" "LANG=zh_CN.UTF-8 STUB_V4=org-v4.kv:200" -4
+check "Quick EDU badge" grep -q "LLC   EDU" <<<"$LAST"
+check "Quick property is the Education IP word" grep -q "教育 IP" <<<"$LAST"
+check "Professional government word" grep -q "机房 *政府" <<<"$LAST"
+check "Professional education word" grep -q "机房 *教育" <<<"$LAST"
+
 run "help-en" "" -h
 run "help-zh" "" -l zh -h
 run "version" "" -V
