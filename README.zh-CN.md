@@ -60,7 +60,7 @@ sha256sum iplense.sh
 - **本机出口 IP**（来自 iplense.cc）：ASN、运营公司与位置、ASN 人类 / 自动化流量构成与注册机构；IPLense 评分、纯净度风险值与网络类型；各数据源的位置、使用类型、公司类型、风险值与风险因子。
 - **本地检测**（从本机发起，每个可达协议族分别检测；JSON 沿用首个协议族的本地结果对象）：
   - ChatGPT 与 Claude：平台看到的地区，对照官方支持地区名单；
-  - Gemini、Grok、Netflix、Disney+、YouTube Premium、Amazon Prime、HBO、Paramount+、TikTok、Reddit：是否解锁及地区；
+  - Gemini、Grok、Netflix、Disney+、Prime、HBO、Paramount+、TikTok、Reddit：是否解锁及地区；
   - 出站 25 端口：是否读到 Gmail MX 的 `220` 问候。先解析，再连接；连接被拒、连接超过 5 秒或连接后 5 秒内没有 `220` 为屏蔽；无法解析服务器或 Bash 不支持网络重定向为失败。
   - 25 端口可用时，经 Cloudflare DNS-over-HTTPS 查到 12 家邮件服务商（Gmail、Outlook、Yahoo、iCloud、QQ、Mail.ru、AOL、GMX、Mail.com、163、搜狐、新浪）的邮件服务器，同时逐个连接。
 
@@ -77,7 +77,7 @@ sha256sum iplense.sh
   - 脚本不登录、不提交账号信息；
   - Disney+ 检测会向 Disney 的服务注册一个匿名设备，只提交通用的设备描述（浏览器、Chrome、Windows），做法与下方致谢的开源脚本相同。
 - **25 端口**：与 Gmail 的邮件服务器建立一次连接；可用时，再向 `cloudflare-dns.com` 做一次 DNS-over-HTTPS 查询，并与 12 家邮件服务商各建立一次连接。读到问候后发送 `QUIT`，不发送任何邮件。
-- **报告**：默认发送自检令牌、客户端版本、语言、12 个平台的状态与地区、25 端口与各邮件服务商的结果，以及出口是否不同和脱敏后的出口 IP。本站只保存脱敏报告，保留 30 天，持有链接者可查看。`-p` 或 `-j` 不生成报告，本地检测结果不上传；`-f` 也不会在报告请求中发送完整 IP。
+- **报告**：默认发送自检令牌、客户端版本、语言、11 个平台的状态与地区、25 端口与各邮件服务商的结果，以及出口是否不同和脱敏后的出口 IP。本站只保存脱敏报告，保留 30 天，持有链接者可查看。`-p` 或 `-j` 不生成报告，本地检测结果不上传；`-f` 也不会在报告请求中发送完整 IP。
 - **反向解析**：`-f` 通过系统 DNS 查询检测 IP 的 PTR 记录。
 
 iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh/privacy)。
@@ -94,7 +94,7 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
 
 ```text
  IPLense 命令行 IP 体检   bash <(curl -sL https://iplense.cc/cli)
- IPv4 203.0.*.*                                     1.3.0   2026-10-05 01:00 UTC
+ IPv4 203.0.*.*                                     1.3.2   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────
   报告链接    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg （保留 30 天）
 
@@ -141,9 +141,9 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
   IPv4   解锁     解锁    解锁    解锁    解锁     解锁
          JP       JP      JP      CA      JP       JP
 
-        YouTube  Amazon Prime  HBO     Paramount+  TikTok  Reddit
-  IPv4   解锁     解锁          解锁    解锁        解锁    解锁
-         JP       JP            CA      CA          JP      JP
+        Prime   HBO     Paramount+  TikTok  Reddit
+  IPv4   解锁    解锁    解锁        解锁    解锁
+         JP      CA      CA          JP      JP
 
 六、出站 25 端口
   IPv4   可用     Gmail   Outlook   Yahoo   Apple   QQ   Mail.ru   AOL   GMX

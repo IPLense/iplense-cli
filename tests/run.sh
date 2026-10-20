@@ -177,12 +177,6 @@ check "Gemini: HTTP 451 is unavailable" answers gemini-blocked-status gemini 'un
 check "Gemini: the old false flag alone is unavailable" answers gemini-false-flag gemini 'unavailable US'
 check "Gemini: the old true flag without a verdict is available" answers mixed gemini 'available XQZ'
 check "Gemini: a page with neither a flag nor a verdict is a failed check" answers gemini-silent gemini 'failed'
-check "YouTube: an offer with one stated region is available there" answers available youtube 'available CA'
-check "YouTube: a redirect to google.cn is unavailable" answers youtube-cn youtube 'unavailable'
-check "YouTube: the not-available notice outranks an offer" answers youtube-region-text youtube 'unavailable'
-check "YouTube: an offer with two stated regions shows none" answers youtube-two-regions youtube 'available'
-check "YouTube: ad-free text without an offer is a failed check" answers youtube-no-offer youtube 'failed'
-check "YouTube: a consent page is a failed check" answers mixed youtube 'failed'
 # shellcheck disable=SC2016 # expanded by the inner shells, not here.
 check "Gemini asks NotebookLM without following the redirect, over the same family" \
 	sh -c ': >"$1"; STUB_LOCAL=available bash -c '"'"'eval "$(sed "\$d" "$0")"; LOCAL_FAMILY=6; check_gemini >/dev/null'"'"' "$2"; grep -q -- "^-6 .*notebooklm.google.com" "$1" && ! grep "notebooklm" "$1" | grep -q -- " -L "' _ "$STUB_LOG" "$ROOT/iplense.sh"

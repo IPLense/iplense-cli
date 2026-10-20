@@ -1,5 +1,5 @@
  [1mIPLense 命令行 IP 体检[0m   [2mbash <(curl -sL https://iplense.cc/cli)[0m
- [1;94mIPv4[0m 203.0.*.*                                     [2m1.3.1   2026-10-05 01:00 UTC[0m
+ [1;94mIPv4[0m 203.0.*.*                                     [2m1.3.2   2026-10-05 01:00 UTC[0m
 [2m────────────────────────────────────────────────────────────────────────────────[0m
   [2m报告链接[0m    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg （保留 30 天）
 
@@ -46,9 +46,9 @@
   [1;94mIPv4[0m  [97;42m 解锁 [0m   [97;42m 解锁 [0m  [97;42m 解锁 [0m  [97;42m 解锁 [0m  [97;42m 解锁 [0m   [97;42m 解锁 [0m
          [2mJP[0m       [2mJP[0m      [2mJP[0m      [2mCA[0m      [2mJP[0m       [2mJP[0m
 
-        [1mYouTube[0m  [1mAmazon Prime[0m  [1mHBO[0m     [1mParamount+[0m  [1mTikTok[0m  [1mReddit[0m
-  [1;94mIPv4[0m  [97;42m 解锁 [0m   [97;42m 解锁 [0m        [97;42m 解锁 [0m  [97;42m 解锁 [0m      [97;42m 解锁 [0m  [97;42m 解锁 [0m
-         [2mJP[0m       [2mJP[0m            [2mCA[0m      [2mCA[0m          [2mJP[0m      [2mJP[0m
+        [1mPrime[0m   [1mHBO[0m     [1mParamount+[0m  [1mTikTok[0m  [1mReddit[0m
+  [1;94mIPv4[0m  [97;42m 解锁 [0m  [97;42m 解锁 [0m  [97;42m 解锁 [0m      [97;42m 解锁 [0m  [97;42m 解锁 [0m
+         [2mJP[0m      [2mCA[0m      [2mCA[0m          [2mJP[0m      [2mJP[0m
 
 [1;94m六、出站 25 端口[0m
   [1;94mIPv4[0m  [97;42m 可用 [0m   [97;42m Gmail [0m [97;42m Outlook [0m [97;42m Yahoo [0m [97;42m Apple [0m [97;42m QQ [0m [97;42m Mail.ru [0m [97;42m AOL [0m [97;42m GMX [0m

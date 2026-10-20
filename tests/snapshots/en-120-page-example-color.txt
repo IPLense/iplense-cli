@@ -1,5 +1,5 @@
  [1mIPLense CLI IP check[0m   [2mbash <(curl -sL https://iplense.cc/cli)[0m
- [1;94mIPv4[0m 203.0.*.*                                                                             [2m1.3.1   2026-10-05 01:00 UTC[0m
+ [1;94mIPv4[0m 203.0.*.*                                                                             [2m1.3.2   2026-10-05 01:00 UTC[0m
 [2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
   [2mReport link[0m    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
 
@@ -46,9 +46,9 @@
   [1;94mIPv4[0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m
          [2mJP[0m          [2mJP[0m          [2mJP[0m          [2mCA[0m          [2mJP[0m          [2mJP[0m
 
-        [1mYouTube[0m     [1mAmazon Prime[0m  [1mHBO[0m         [1mParamount+[0m  [1mTikTok[0m      [1mReddit[0m
-  [1;94mIPv4[0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m    [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m
-         [2mJP[0m          [2mJP[0m            [2mCA[0m          [2mCA[0m          [2mJP[0m          [2mJP[0m
+        [1mPrime[0m       [1mHBO[0m         [1mParamount+[0m  [1mTikTok[0m      [1mReddit[0m
+  [1;94mIPv4[0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m
+         [2mJP[0m          [2mCA[0m          [2mCA[0m          [2mJP[0m          [2mJP[0m
 
 [1;94m6. Outbound port 25[0m
   [1;94mIPv4[0m  [97;42m Open [0m   [97;42m Gmail [0m [97;42m Outlook [0m [97;42m Yahoo [0m [97;42m Apple [0m [97;42m QQ [0m [97;42m Mail.ru [0m [97;42m AOL [0m [97;42m GMX [0m [97;42m Mail.com [0m [97;42m 163 [0m [97;42m Sohu [0m [97;42m Sina [0m

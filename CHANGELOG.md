@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2
+
+- YouTube Premium is no longer checked: Google's view of the IP already shows in the Gemini result. Eleven platforms remain.
+- Prime Video is labelled "Prime".
+
 ## 1.3.1
 
 - Side by side (two families on 120 columns), a source whose name contains a space (Abstract API, ProxyCheck) is no longer left out of the type and risk tables.

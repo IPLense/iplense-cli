@@ -1,5 +1,5 @@
  IPLense CLI IP check   bash <(curl -sL https://iplense.cc/cli)
- IPv6 2001:db8:4860:*:*:*:*:*                       1.3.1   2026-10-05 01:00 UTC
+ IPv6 2001:db8:4860:*:*:*:*:*                       1.3.2   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────
   Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
 
@@ -37,8 +37,8 @@
   IPv6   Unlocked    Unlocked    Failed    Failed    Failed    Failed
          CA          CA
 
-        YouTube   Amazon Prime  HBO       Paramount+  TikTok    Reddit
-  IPv6   Failed    Failed        Failed    Failed      Failed    Failed
+        Prime     HBO       Paramount+  TikTok    Reddit
+  IPv6   Failed    Failed    Failed      Failed    Failed
 
 
 6. Outbound port 25

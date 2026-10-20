@@ -42,7 +42,7 @@ def run(args, terminal):
 
 text = run(['-4'], True).decode()
 assert '正在查询本机 IPv4 结果…' in text
-names = ['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Netflix', 'Disney+', 'YouTube', 'Amazon Prime', 'HBO', 'Paramount+', 'TikTok', 'Reddit', '出站 25 端口']
+names = ['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Netflix', 'Disney+', 'Prime', 'HBO', 'Paramount+', 'TikTok', 'Reddit', '出站 25 端口']
 for i, name in enumerate(names, 1):
     assert f'正在检测 {name}（{i}/{len(names)}）…' in text
 assert '正在检测各邮件服务商的 25 端口…' in text

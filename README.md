@@ -68,7 +68,7 @@ backgrounds.
   each data source's location, usage and company type, risk value and risk factors.
 - **Local checks** (from this machine, separately over each reachable IP family; JSON keeps the first family's local object):
   - ChatGPT and Claude: the region each platform sees, against their official supported-region lists;
-  - Gemini, Grok, Netflix, Disney+, YouTube Premium, Amazon Prime, HBO, Paramount+, TikTok and Reddit: unlocked or not, and the region;
+  - Gemini, Grok, Netflix, Disney+, Prime, HBO, Paramount+, TikTok and Reddit: unlocked or not, and the region;
   - outbound port 25: whether Gmail's MX returns a `220` greeting. DNS is resolved before connecting. Refusal, a five-second connection timeout or no `220` within five seconds of connection is blocked; an unresolved server or Bash without network redirections is a failed check;
   - where port 25 is open, the mail servers of twelve providers (Gmail, Outlook, Yahoo, iCloud, QQ, Mail.ru, AOL, GMX, Mail.com, 163, Sohu, Sina), found over Cloudflare DNS-over-HTTPS and tried at the same time.
 
@@ -85,7 +85,7 @@ backgrounds.
   - the Disney+ check registers an anonymous device with a generic description (browser, Chrome, Windows), as the open-source
     scripts credited below do.
 - **Port 25**: one connection to Gmail's mail server; where it answers, one DNS-over-HTTPS lookup at `cloudflare-dns.com` and one connection for each of the twelve mail providers. The script reads each greeting and says `QUIT`; no mail is sent.
-- **Reports**: by default, the script sends self-check tokens, client version, language, twelve platform statuses and regions, port 25 and mail-provider results, and whether the exit differs and its masked IP. The site stores only masked reports for 30 days. Anyone with the link can view them. `-p` or `-j` skips report creation and local-result upload. `-f` never sends a complete IP in the report request.
+- **Reports**: by default, the script sends self-check tokens, client version, language, eleven platform statuses and regions, port 25 and mail-provider results, and whether the exit differs and its masked IP. The site stores only masked reports for 30 days. Anyone with the link can view them. `-p` or `-j` skips report creation and local-result upload. `-f` never sends a complete IP in the report request.
 - **Reverse DNS**: `-f` asks the system resolver for the checked address's PTR record.
 
 See the [IPLense privacy policy](https://iplense.cc/en/privacy) for how iplense.cc handles the lookups.
@@ -103,7 +103,7 @@ Six sections, IPv4 only, 80 columns (with IPv4 and IPv6 on a 120-column terminal
 
 ```text
  IPLense CLI IP check   bash <(curl -sL https://iplense.cc/cli)
- IPv4 203.0.*.*                                     1.3.0   2026-10-05 01:00 UTC
+ IPv4 203.0.*.*                                     1.3.2   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────
   Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
 
@@ -150,13 +150,9 @@ Six sections, IPv4 only, 80 columns (with IPv4 and IPv6 on a 120-column terminal
   IPv4   Unlocked    Unlocked    Unlocked    Unlocked    Unlocked    Unlocked
          JP          JP          JP          CA          JP          JP
 
-        YouTube     Amazon Prime  HBO         Paramount+  TikTok
-  IPv4   Unlocked    Unlocked      Unlocked    Unlocked    Unlocked
-         JP          JP            CA          CA          JP
-
-        Reddit
-  IPv4   Unlocked
-         JP
+        Prime       HBO         Paramount+  TikTok      Reddit
+  IPv4   Unlocked    Unlocked    Unlocked    Unlocked    Unlocked
+         JP          CA          CA          JP          JP
 
 6. Outbound port 25
   IPv4   Open     Gmail   Outlook   Yahoo   Apple   QQ   Mail.ru   AOL   GMX

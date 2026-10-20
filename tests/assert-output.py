@@ -34,7 +34,7 @@ request = json.loads((root / '.work/report.json').read_text())
 assert set(request) == {'schema', 'clientVersion', 'locale', 'reportTokens', 'local'}
 assert request['schema'] == 'cli-report/2' and request['clientVersion'] == VERSION
 assert len(request['local']) == len(request['reportTokens']) == 2
-platforms = {'chatgpt', 'claude', 'gemini', 'grok', 'netflix', 'disney', 'youtube', 'prime', 'hbo', 'paramount', 'tiktok', 'reddit'}
+platforms = {'chatgpt', 'claude', 'gemini', 'grok', 'netflix', 'disney', 'prime', 'hbo', 'paramount', 'tiktok', 'reddit'}
 mail = {'gmail', 'outlook', 'yahoo', 'apple', 'qq', 'mailru', 'aol', 'gmx', 'mailcom', 'netease', 'sohu', 'sina'}
 for local in request['local']:
     assert set(local) == {'family', 'platforms', 'port25', 'mail', 'exitDiffers', 'exitIp'}

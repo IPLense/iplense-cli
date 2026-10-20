@@ -23,7 +23,7 @@
 # regions, port 25 status and a masked differing exit. Reports last 30 days; -p and -j skip creation.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.3.1
+VERSION=1.3.2
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -128,7 +128,7 @@ usage() {
 			'向 iplense.cc 每个协议族发一次请求，服务器只得到连接 IP。' \
 			'本地检测每个协议族向各平台发 1–3 次请求；Disney+ 会注册匿名设备。' \
 			'25 端口可用时，经 Cloudflare DNS-over-HTTPS 查询 12 家邮件服务商的邮件服务器并逐个连接 25 端口。' \
-			'默认生成报告：上传自检令牌、版本、语言、12 个平台的状态与地区、25 端口与邮件服务商结果，' \
+			'默认生成报告：上传自检令牌、版本、语言、11 个平台的状态与地区、25 端口与邮件服务商结果，' \
 			'以及出口是否不同和脱敏出口 IP；只保存脱敏报告，保留 30 天，持有链接者可查看。' \
 			'-p 或 -j 不生成报告；-f 通过系统 DNS 查询检测 IP 的反向解析。' \
 			'不需要 root，不安装任何软件，除 -o 指定的文件外不写文件。'
@@ -150,7 +150,7 @@ usage() {
 			'Sends one request per IP family to iplense.cc; the server sees only the connection IP.' \
 			'Local checks send 1-3 requests per family to each platform; Disney+ registers an anonymous device.' \
 			'Where port 25 is open, twelve mail providers are looked up over Cloudflare DNS-over-HTTPS and tried on port 25.' \
-			'Reports upload self-check tokens, version, language, 12 platform statuses and regions, port 25 and mail results,' \
+			'Reports upload self-check tokens, version, language, 11 platform statuses and regions, port 25 and mail results,' \
 			'and whether the exit differs and its masked IP. Only masked reports are stored, for 30 days.' \
 			"Anyone with the link can view it. -p or -j skips reports; -f queries system DNS for the checked IP's PTR." \
 			'Needs no root, installs nothing, and writes no file except the one named with -o.'
@@ -1092,8 +1092,8 @@ SDN:SD SEN:SN SGP:SG SGS:GS SHN:SH SJM:SJ SLB:SB SLE:SL SLV:SV SMR:SM SOM:SO SPM
 SVK:SK SVN:SI SWE:SE SWZ:SZ SXM:SX SYC:SC SYR:SY TCA:TC TCD:TD TGO:TG THA:TH TJK:TJ TKL:TK TKM:TM TLS:TL TON:TO
 TTO:TT TUN:TN TUR:TR TUV:TV TWN:TW TZA:TZ UGA:UG UKR:UA UMI:UM URY:UY USA:US UZB:UZ VAT:VA VCT:VC VEN:VE VGB:VG
 VIR:VI VNM:VN VUT:VU WLF:WF WSM:WS YEM:YE ZAF:ZA ZMB:ZM ZWE:ZW'
-LOCAL_CHECKS='chatgpt claude gemini grok netflix disney youtube prime hbo paramount tiktok reddit port25'
-PLATFORMS='chatgpt claude gemini grok netflix disney youtube prime hbo paramount tiktok reddit'
+LOCAL_CHECKS='chatgpt claude gemini grok netflix disney prime hbo paramount tiktok reddit port25'
+PLATFORMS='chatgpt claude gemini grok netflix disney prime hbo paramount tiktok reddit'
 
 # One request over the local checks' family; sets PAGE (the body) and PAGE_STATUS ("<code> <final URL>", empty on failure).
 page() {
@@ -1248,31 +1248,6 @@ check_disney() {
 	supported=$(match '"inSupportedLocation" *: *(true|false)')
 	if [ -n "$region" ] && [ "$supported" = true ]; then printf 'available %s' "$region"
 	elif [ -n "$region" ] && [ "$supported" = false ]; then printf 'unavailable %s' "$region"
-	else fail; fi
-}
-
-# YouTube Premium: only a page where Premium is sold carries the purchase button or offer cards ("ad-free" also appears on the
-# not-available page). YouTube gives a US content region to places where Premium is not sold, so the region is shown only
-# next to an offer, and only when the page states one. A consent or sign-in page is a failed check: no consent cookie is
-# made up to get past it.
-check_youtube() {
-	local unavailable=''
-	page 'https://www.youtube.com/premium?hl=en'
-	[ -z "$PAGE_STATUS" ] && { fail; return; }
-	case $(url_host "${PAGE_STATUS#* }") in
-	google.cn | *.google.cn) printf 'unavailable'; return ;;
-	consent.youtube.com | accounts.google.com) fail; return ;;
-	esac
-	case ${PAGE_STATUS%% *} in 2??) ;; *) fail; return ;; esac
-	[ -z "$PAGE" ] && { fail; return; }
-	shopt -s nocasematch
-	[[ $PAGE == *'premium is not available in your country'* || $PAGE == *'premium is not available in your region'* ]] && unavailable=1
-	shopt -u nocasematch
-	if [ -n "$unavailable" ]; then printf 'unavailable'
-	elif [[ $PAGE == *premiumPurchaseButtonRenderer* || $PAGE == *lpOfferCardViewModel* ]]; then
-		local region
-		region=$(single "$(matches '"(INNERTUBE_CONTEXT_GL|contentRegion|GL)" *: *"([A-Z]{2})"' 2)")
-		printf 'available%s' "${region:+ $region}"
 	else fail; fi
 }
 
@@ -1452,7 +1427,7 @@ ai_list() {
 local_name() {
 	case $1 in
 	chatgpt) printf ChatGPT ;; claude) printf Claude ;; gemini) printf Gemini ;; grok) printf Grok ;; netflix) printf Netflix ;;
-	disney) printf 'Disney+' ;; youtube) printf YouTube ;; prime) printf 'Amazon Prime' ;; hbo) printf HBO ;;
+	disney) printf 'Disney+' ;; prime) printf Prime ;; hbo) printf HBO ;;
 	paramount) printf 'Paramount+' ;; tiktok) printf TikTok ;; reddit) printf Reddit ;; port25) t port25 ;; mail) t mail_progress ;;
 	esac
 }

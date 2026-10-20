@@ -73,7 +73,6 @@ https://iplense.cc/*)
 *bamgrid.com/devices) key=disney-devices ;;
 *bamgrid.com/token) key=disney-token ;;
 *bamgrid.com/graph/*) key=disney-graphql ;;
-*youtube.com/premium*) key=youtube ;;
 *tiktok.com/*) key=tiktok ;;
 *primevideo.com*) key=prime ;;
 *reddit.com/*) key=reddit ;;
