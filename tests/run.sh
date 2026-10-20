@@ -75,9 +75,17 @@ has_controls() {
 last_line() { [ "$(tail -n 1 "$ROOT/iplense.sh")" = 'main "$@"' ]; }
 check "the script ends with main \"\$@\" (the harness drops that line)" last_line
 
+# The shared report (iplense.cc/r/<id>.svg) is this text report drawn from what the client uploads. These runs keep their upload
+# beside their output; the site's CliReportRenderTest renders each upload back and expects the same lines.
+report_body() {
+	if [ "${UPDATE-}" = 1 ]; then cp tests/.work/report.json "tests/snapshots/$1-report.json"; fi
+	check "the report upload is kept beside its output ($1)" cmp -s tests/.work/report.json "tests/snapshots/$1-report.json"
+}
+
 for lang in en zh; do
 	for cols in 80 120; do
 		run "$lang-$cols-dual" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=full-v4.kv:200 STUB_V6=full-v6.kv:200"
+		[ "$cols" = 120 ] && report_body "$lang-120-dual"
 		run "$lang-$cols-v4" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=full-v4.kv:200" -4
 		run "$lang-$cols-v6" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V6=full-v6.kv:200" -6
 	done
@@ -134,7 +142,7 @@ done
 # The website's example (iplense.cc/{zh,en}/cli shows these files): IPv4 with local checks at 120 columns, from a fixture equal
 # to full-v4.kv but with a city short enough that no cell is cut; the example must show no ellipsis.
 # Phones (below 767px) show the 80-column example, wider screens the 120-column one.
-for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=page-v4.kv:200 STUB_LOCAL=page" -4; done; done
+for lang in en zh; do for cols in 80 120; do run "$lang-$cols-page-example" "LANG=${lang}_US.UTF-8 COLUMNS=$cols STUB_V4=page-v4.kv:200 STUB_LOCAL=page" -4; done; report_body "$lang-120-page-example"; done
 no_ellipsis() { ! grep -q '…' "tests/snapshots/$1.txt"; }
 for name in en-80 zh-80 en-120 zh-120; do check "the page example has no cut cell ($name)" no_ellipsis "$name-page-example"; done
 # The page shows the example in colour (from these snapshots, as a terminal shows them); without its colour codes and the

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Side by side (two families on 120 columns), a source whose name contains a space (Abstract API, ProxyCheck) is no longer left out of the type and risk tables.
+- The shared report image is now this text report itself: the same lines, columns, words and colours as the terminal.
+
 ## 1.3.0
 
 - **One report on one screen.** On a terminal of 120 columns, IPv4 and IPv6 stand side by side; on a narrower one they follow each other. The order follows the website's result: IP score, basics (ASN, operator, IP property, AS number, ASN traffic, registration and use), multi-source IP types, multi-source IP risk, AI and streaming, outbound port 25. The report link is now at the top.

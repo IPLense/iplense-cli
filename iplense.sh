@@ -23,7 +23,7 @@
 # regions, port 25 status and a masked differing exit. Reports last 30 days; -p and -j skip creation.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.3.0
+VERSION=1.3.1
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -616,7 +616,9 @@ emit() {
 		n=$((n + 1))
 	done
 	if [ "$WIDE" = 1 ]; then
-		for key in $keys; do
+		# One key a line: a source's key may contain spaces ("Abstract API").
+		while IFS= read -r key <&3; do
+			[ -z "$key" ] && continue
 			label='' i=0
 			local -a left=() right=()
 			for f in $FAMS; do
@@ -638,7 +640,7 @@ emit() {
 				printf '%s%s\n' "$(vpad "${left[$j]-}" "$CW")" "${right[$j]-}"
 				j=$((j + 1))
 			done
-		done
+		done 3<<<"$keys"
 		return
 	fi
 	i=0

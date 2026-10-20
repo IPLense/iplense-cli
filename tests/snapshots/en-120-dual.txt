@@ -1,5 +1,5 @@
  IPLense CLI IP check   bash <(curl -sL https://iplense.cc/cli)
- IPv4 203.0.*.*    IPv6 2001:db8:4860:*:*:*:*:*                                             1.3.0   2026-10-05 01:00 UTC
+ IPv4 203.0.*.*    IPv6 2001:db8:4860:*:*:*:*:*                                             1.3.1   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
 
@@ -25,8 +25,10 @@
                 Industrial District
                 North Ward, JP
   IPGeolocation Temporarily unavailable
+  Abstract API  Tokyo, JP                IDC        –
   Ipregistry    Error
   IPinfo        Tokyo, JP                IDC        –               München, DE              ISP        –
+  Proxycheck    Tokyo, JP              Business      –
 
 4. IP risk by source
                 IPv4                                                IPv6
@@ -35,7 +37,9 @@
   ipapi.is      8 Low risk      ●      ·    ·   ·    –     ·    –   0 Low risk      ·      ·    ·   ·    –     ·    –
   ipdata        62 High risk    ●      ●    –   ·    ·     ●    –
   IPGeolocation Temporarily unavailable
+  Abstract API  Medium          ●      ·    ·   ·    ·     –    –
   Ipregistry    Error
+  Proxycheck    0 Low risk      –      ·    ·   –    –     –    –
   AbuseIPDB     0 Low risk      –      –    –   –    –     ·    –
   ● Detected   · Not detected   – Not provided
 

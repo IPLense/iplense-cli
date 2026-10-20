@@ -1,5 +1,5 @@
  [1mIPLense CLI IP check[0m   [2mbash <(curl -sL https://iplense.cc/cli)[0m
- [1;94mIPv4[0m 203.0.*.*                                     [2m1.3.0   2026-10-05 01:00 UTC[0m
+ [1;94mIPv4[0m 203.0.*.*                                     [2m1.3.1   2026-10-05 01:00 UTC[0m
 [2m────────────────────────────────────────────────────────────────────────────────[0m
   [2mReport link[0m    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
 
