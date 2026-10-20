@@ -1,2 +1,2 @@
 200 https://www.primevideo.com/
-<html>no territory</html>
+<html>{"isServiceRestricted":true,"currentTerritory":"CN"}</html>

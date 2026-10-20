@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0
+
+- **One report on one screen.** On a terminal of 120 columns, IPv4 and IPv6 stand side by side; on a narrower one they follow each other. The order follows the website's result: IP score, basics (ASN, operator, IP property, AS number, ASN traffic, registration and use), multi-source IP types, multi-source IP risk, AI and streaming, outbound port 25. The report link is now at the top.
+- **The website's colours.** Types, properties and platform results are solid labels with white text, as on the result page and in Professional Check. Risk values carry their level (low, medium, high risk).
+- **More platforms.** Grok, HBO and Paramount+ join ChatGPT, Claude, Gemini, Netflix, Disney+, YouTube, Amazon Prime, TikTok and Reddit. Prime Video now reports a region where the service is restricted as blocked instead of a failed check.
+- **IPv6 told apart.** A platform with no IPv6 address is left out of IPv6 results instead of showing as failed or blocked, so a blocked result always means the platform refused this IP.
+- **Mail providers.** Where outbound port 25 is open, the servers of twelve mail providers (Gmail, Outlook, Yahoo, iCloud, QQ, Mail.ru, AOL, GMX, Mail.com, 163, Sohu, Sina) are looked up over Cloudflare DNS-over-HTTPS and tried on port 25, all at once.
+- Reports use the `cli-report/2` contract (twelve platforms and the mail results); 1.2 clients keep using `cli-report/1`.
+
 ## 1.2.1
 
 - Quick types follow the website: BIZ (business), EDU (education) and GOV (government) badges beside ISP and IDC, and the Business, Education and Government IP properties. EDU and GOV are blue; BIZ is yellow.

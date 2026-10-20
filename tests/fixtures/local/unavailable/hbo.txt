@@ -1,0 +1,5 @@
+200 https://www.hbomax.com/
+HTTP/2 200
+set-cookie: countryCode=CN; path=/
+
+<script>[{"countryCode":"ca"},{"countryCode":"us"}]</script>

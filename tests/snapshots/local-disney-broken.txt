@@ -1,56 +1,62 @@
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              IPLense self-check                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-  203.0.*.* · CLI 1.2.1 · 2026-10-05 01:00 UTC
-
-1. Basics
-  ASN            AS64500 · Example Cloud Networks   IDC
-  Operator       Example Cloud Networks LLC   IDC
-  Location       Japan · Tokyo
-  Registered in  JP · APNIC
-  ASN traffic    Human 81.68%  ━━━━━━━━━━━━━━━━┃━━━  Automated 18.32%
-  IP Property     Native   Datacenter
-
-2. Multi-source IP Types
-  Source         Location                                Usage       Company
-  IPLocate       JP · Tokyo                              IDC         Business
-  ipapi.is       JP · Shinagawa                          IDC         IDC
-  ipdata         JP · Higashi-Ōsaka Industrial           IDC         Business
-                 District North Ward
-  Abstract API   JP · Tokyo                              IDC         –
-  IPinfo         JP · Tokyo                              IDC         –
-  Proxycheck     JP · Tokyo                              Business    –
-  IPGeolocation  Quota temporarily unavailable
-  Ipregistry     This call failed
-
-3. Risk scores and factors
-  IPLense Score                 72  ━━━━━━━━━━━━━━┃━━━━━  Good
-  IP Purity Risk value      18/100  ━━━┃━━━━━━━━━━━━━━━━  Low
-
-  Source        Risk value  Hosting  Proxy  VPN  Tor  Relay  Abuse  Bot
-  IPLocate      35          ●        ·      ·    ·    –      ·      –
-  ipapi.is      8           ●        ·      ·    ·    –      ·      –
-  ipdata        62          ●        ●      –    ·    ·      ●      –
-  Abstract API  Medium      ●        ·      ·    ·    ·      –      –
-  Proxycheck    0           –        ·      ·    –    –      –      –
-  AbuseIPDB     0           –        –      –    –    –      ·      –
-  ● Detected  · Not detected  – Not provided
-
-4. AI and streaming
-          ChatGPT       Claude        Gemini
-  Status  Check failed  Check failed  Check failed
-  Region
-
-          Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
-  Status  Check    Check    Check failed     Check   Check        Check
-          failed   failed                    failed  failed       failed
-  Region
-
-5. Outbound port 25
-   Available
-
+ IPLense CLI IP check   bash <(curl -sL https://iplense.cc/cli)
+ IPv4 203.0.*.*                                     1.3.0   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────
   Report link    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg (30 days)
+
+1. IP score     IPv4
+  IPLense Score 72  ━━━━━━━━━━━━━━┃━━━━━  Good
+  IP Purity     18  ━━━┃━━━━━━━━━━━━━━━━  Low risk
+
+2. Basics       IPv4
+  ASN name       IDC   Example Cloud Networks
+  Operator       IDC   Example Cloud Networks LLC
+  IP Property    Native   Datacenter
+  AS number     AS64500
+  ASN traffic   Human 81.68% ━━━━━━━━━━━━━┃━━ Bots 18.32%
+  Registered in JP  APNIC
+  Used in       Tokyo, Japan
+
+3. IP types by source
+                IPv4
+  Source        Location                Usage    Company
+  IPLocate      Tokyo, JP                IDC     Business
+  ipapi.is      Shinagawa, JP            IDC       IDC
+  ipdata        Higashi-Ōsaka            IDC     Business
+                Industrial District
+                North Ward, JP
+  IPGeolocation Temporarily unavailable
+  Abstract API  Tokyo, JP                IDC        –
+  Ipregistry    Error
+  IPinfo        Tokyo, JP                IDC        –
+  Proxycheck    Tokyo, JP              Business      –
+
+4. IP risk by source
+                IPv4
+  Source        Risk value   Hosting Proxy VPN Tor Relay Abuse Bot
+  IPLocate      35 Medium       ●      ·    ·   ·    –     ·    –
+  ipapi.is      8 Low risk      ●      ·    ·   ·    –     ·    –
+  ipdata        62 High risk    ●      ●    –   ·    ·     ●    –
+  IPGeolocation Temporarily unavailable
+  Abstract API  Medium          ●      ·    ·   ·    ·     –    –
+  Ipregistry    Error
+  Proxycheck    0 Low risk      –      ·    ·   –    –     –    –
+  AbuseIPDB     0 Low risk      –      –    –   –    –     ·    –
+  ● Detected   · Not detected   – Not provided
+
+5. AI and streaming
+        ChatGPT   Claude    Gemini    Grok      Netflix   Disney+
+  IPv4   Failed    Failed    Failed    Failed    Failed    Failed
+
+
+        YouTube   Amazon Prime  HBO       Paramount+  TikTok    Reddit
+  IPv4   Failed    Failed        Failed    Failed      Failed    Failed
+
+
+6. Outbound port 25
+  IPv4   Open     Gmail   Outlook   Yahoo   Apple   QQ   Mail.ru   AOL   GMX
+                  Mail.com   163   Sohu   Sina
+
+────────────────────────────────────────────────────────────────────────────────
   About the CLI  https://iplense.cc/en/cli
 
 [exit 0]

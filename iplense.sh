@@ -23,7 +23,7 @@
 # regions, port 25 status and a masked differing exit. Reports last 30 days; -p and -j skip creation.
 # It needs bash and curl, no root, installs nothing, and writes no file except the one named with -o.
 
-VERSION=1.2.1
+VERSION=1.3.0
 BASE=https://iplense.cc
 SCHEMA=cli-self/1
 
@@ -40,7 +40,23 @@ PRIVATE=0
 t() {
 	local zh en
 	case $1 in
-	title) zh='IPLense 本机 IP 体检'; en='IPLense self-check' ;;
+	title) zh='命令行 IP 体检'; en='CLI IP check' ;;
+	section_score) zh='IP 评分'; en='IP score' ;;
+	section_basics) zh='基础信息'; en='Basics' ;;
+	section_types) zh='多源 IP 类型'; en='IP types by source' ;;
+	asn_name) zh='ASN 名称'; en='ASN name' ;;
+	as_number) zh='AS 号码'; en='AS number' ;;
+	registered_in) zh='IP 注册地区'; en='Registered in' ;;
+	used_in) zh='IP 使用地区'; en='Used in' ;;
+	human) zh='人类'; en='Human' ;;
+	automated) zh='自动化'; en='Bots' ;;
+	risk_low) zh='低风险'; en='Low risk' ;;
+	risk_medium) zh='中风险'; en='Medium' ;;
+	risk_high) zh='高风险'; en='High risk' ;;
+	unlocked) zh='解锁'; en='Unlocked' ;;
+	blocked) zh='屏蔽'; en='Blocked' ;;
+	port_open) zh='可用'; en='Open' ;;
+	mail_progress) zh='正在检测各邮件服务商的 25 端口…'; en='Checking port 25 at each mail provider…' ;;
 	checking) zh='正在查询本机 IPv%s 结果…'; en="Querying this machine's IPv%s result…" ;;
 	no_conn) zh='无连接'; en='No connection' ;;
 	other_family) zh='无 IPv%s 出口：请求以 IPv%s 到达（%s）'; en='No IPv%s exit: the request arrived over IPv%s (%s)' ;;
@@ -61,7 +77,7 @@ t() {
 	report_missing) zh='未取得报告令牌，请重新自检'; en='No report token; run the self-check again' ;;
 	report_mismatch) zh='报告出口不匹配，请从成功检测的出口重新自检'; en='Report exit mismatch; repeat the self-check from a checked exit' ;;
 	report_invalid) zh='报告请求字段无效：%s'; en='Invalid report field: %s' ;;
-	section_risk) zh='风险评分与风险因子'; en='Risk scores and factors' ;;
+	section_risk) zh='多源 IP 风险'; en='IP risk by source' ;;
 	status) zh='状态'; en='Status' ;;
 	region_label) zh='地区'; en='Region' ;;
 	client_name) zh='命令行'; en='CLI' ;;
@@ -72,8 +88,8 @@ t() {
 	local_exit_note) zh='与上方检测的 IP 不同，平台看到的是这个出口'; en='Differs from the IP checked above; the platforms see this exit' ;;
 	available) zh='可用'; en='Available' ;;
 	unavailable) zh='不可用'; en='Unavailable' ;;
-	failed) zh='检测失败'; en='Check failed' ;;
-	originals_only) zh='仅自制内容'; en='Originals only' ;;
+	failed) zh='失败'; en='Failed' ;;
+	originals_only) zh='仅自制'; en='Originals' ;;
 	port25) zh='出站 25 端口'; en='Outbound port 25' ;;
 	saved) zh='已保存到 %s'; en='Saved to %s' ;;
 	write_failed) zh='无法写入 %s'; en='Cannot write %s' ;;
@@ -111,7 +127,8 @@ usage() {
 			'' \
 			'向 iplense.cc 每个协议族发一次请求，服务器只得到连接 IP。' \
 			'本地检测每个协议族向各平台发 1–3 次请求；Disney+ 会注册匿名设备。' \
-			'默认生成报告：上传自检令牌、版本、语言、九个平台的状态与地区、25 端口状态，' \
+			'25 端口可用时，经 Cloudflare DNS-over-HTTPS 查询 12 家邮件服务商的邮件服务器并逐个连接 25 端口。' \
+			'默认生成报告：上传自检令牌、版本、语言、12 个平台的状态与地区、25 端口与邮件服务商结果，' \
 			'以及出口是否不同和脱敏出口 IP；只保存脱敏报告，保留 30 天，持有链接者可查看。' \
 			'-p 或 -j 不生成报告；-f 通过系统 DNS 查询检测 IP 的反向解析。' \
 			'不需要 root，不安装任何软件，除 -o 指定的文件外不写文件。'
@@ -132,7 +149,8 @@ usage() {
 			'' \
 			'Sends one request per IP family to iplense.cc; the server sees only the connection IP.' \
 			'Local checks send 1-3 requests per family to each platform; Disney+ registers an anonymous device.' \
-			'Reports upload self-check tokens, version, language, nine platform statuses and regions, port 25 status,' \
+			'Where port 25 is open, twelve mail providers are looked up over Cloudflare DNS-over-HTTPS and tried on port 25.' \
+			'Reports upload self-check tokens, version, language, 12 platform statuses and regions, port 25 and mail results,' \
 			'and whether the exit differs and its masked IP. Only masked reports are stored, for 30 days.' \
 			"Anyone with the link can view it. -p or -j skips reports; -f queries system DNS for the checked IP's PTR." \
 			'Needs no root, installs nothing, and writes no file except the one named with -o.'
@@ -280,11 +298,6 @@ label() {
 # A cell whose style says whether it is a label (b...) or text.
 any_cell() {
 	case $3 in b*) label "$1" "$2" "$3" ;; *) cell "$@" ;; esac
-}
-
-# Columns a cell takes: a label is two wider than its text.
-cell_width() {
-	case $2 in b*) printf '%s' $(($(width "$1") + 2)) ;; *) width "$1" ;; esac
 }
 
 # $1 repeated $2 times.
@@ -486,46 +499,30 @@ scale() {
 	printf '%s%s' "$out" "$(paint "$last" "$run")"
 }
 
-# A section heading, numbered in the order shown ("一、" in Chinese, "1." in English); $2 is added after it as given.
-SECTION=0
-section() {
-	local n
-	SECTION=$((SECTION + 1))
-	if [ "$LANG_UI" = zh ]; then
-		case $SECTION in 1) n='一、' ;; 2) n='二、' ;; 3) n='三、' ;; 4) n='四、' ;; 5) n='五、' ;; *) n='六、' ;; esac
-	else
-		n="$SECTION. "
-	fi
-	printf '\n%s%s\n' "$(paint head "$n$1")" "${2-}"
-}
-
-# The report header: a bordered title, then the IPs checked, the version and when the result was made.
+# The report header: the title and how to run it, then the IPs checked with the version and when the result was made.
 render_header() {
-	local inner=$((COLS - 2)) title tw left ips='' family meta made=''
-	title=$(t title)
-	tw=$(width "$title")
-	left=$(((inner - tw) / 2))
-	printf '%s\n' "$(paint head "$BOX_TL$(repeat "$BOX_H" "$inner")$BOX_TR")"
-	printf '%s%*s%s%*s%s\n' "$(paint head "$BOX_V")" "$left" '' "$(paint bold "$title")" $((inner - tw - left)) '' "$(paint head "$BOX_V")"
-	printf '%s\n' "$(paint head "$BOX_BL$(repeat "$BOX_H" "$inner")$BOX_BR")"
+	local ips='' family made='' meta left
 	for family in $RESULTS; do
 		F=$family
-		ips=${ips:+$ips$SEP}$(display_ip "$(v ip)")
+		ips="$ips    $(paint head "IPv$family") $(display_ip "$(v ip)")"
 		[ -z "$made" ] && made=$(v generatedAt)
 	done
 	case $made in
 	[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]*) made="${made:0:10} ${made:11:5} UTC" ;;
 	*) made='' ;;
 	esac
-	meta=$(joined "$(t client_name) $VERSION" "$made")
-	if [ -z "$ips" ]; then
-		printf '  %s\n' "$(paint dim "$meta")"
-	elif [ $(($(width "$ips$SEP$meta") + 2)) -le "$COLS" ]; then
-		printf '  %s%s\n' "$(paint bold "$ips")" "$(paint dim "$SEP$meta")"
+	meta="$VERSION${made:+   $made}"
+	printf ' %s   %s\n' "$(paint bold "IPLense $(t title)")" "$(paint dim "bash <(curl -sL $BASE/cli)")"
+	left=" ${ips#    }"
+	[ -z "$ips" ] && left=''
+	if [ $(($(vwidth "$left") + $(width "$meta") + 2)) -le "$COLS" ]; then
+		printf '%s%*s%s\n' "$left" $((COLS - $(vwidth "$left") - $(width "$meta"))) '' "$(paint dim "$meta")"
 	else
-		for family in $RESULTS; do F=$family; printf '  %s\n' "$(paint bold "$(display_ip "$(v ip)")")"; done
-		printf '  %s\n' "$(paint dim "$meta")"
+		# Complete addresses (-f) may not share a line with the version: each family on its own line, then the version.
+		for family in $RESULTS; do F=$family; printf ' %s %s\n' "$(paint head "IPv$family")" "$(display_ip "$(v ip)")"; done
+		printf ' %s\n' "$(paint dim "$meta")"
 	fi
+	printf '%s\n' "$(paint dim "$(repeat "$BOX_H" "$COLS")")"
 }
 
 # A family that has no result: its reason on one line.
@@ -536,55 +533,302 @@ render_failure() {
 	printf '  %s  %s\n' "$(paint head "IPv$family")" "$(paint "${!style}" "${!text}")"
 }
 
-# Section one for a family: ownership, location, registration and the two property labels, as the web result card.
-render_basic() {
-	local lw=3 key name company type nature property line nature_style property_style
-	F=$1
-	for key in operator location registration ipProperty asnTraffic; do lw=$(max "$lw" "$(width "$(l "$key")")"); done
-	lw=$((lw + 2))
-	name=$(v quick.asn.name)
-	type=$(v quick.asn.type)
-	line=$(joined "AS$(v quick.asn.number)" "$name")
-	[ -n "$type" ] && line="$line  $(label "$(quick_type_text "$type")" 0 "$(quick_type_style "$type")")"
-	printf '  %s%s\n' "$(cell ASN "$lw" dim)" "$line"
-	company=$(v quick.company.name)
-	type=$(v quick.company.type)
-	if [ -n "$company" ] && [ "$company" != "$name" ]; then
-		line=$company
-		[ -n "$type" ] && line="$line  $(label "$(quick_type_text "$type")" 0 "$(quick_type_style "$type")")"
-		printf '  %s%s\n' "$(cell "$(l operator)" "$lw" dim)" "$line"
+# ---------------------------------------------------------------------------------------------------------------------
+# Rows and columns. A section prints rows "key<US>label<US>cell" for each family; a cell's continuation lines are joined
+# with NL. Two families on a terminal of 120 columns stand side by side (IPv4 left), rows with the same key on one line;
+# otherwise the families follow one another. The label column is LW wide.
+
+US=$'\037'
+NL=$'\036'
+LW=16
+
+# Visible width of a coloured string.
+vwidth() {
+	local LC_ALL=C s=$1
+	s=${s//$'\033'\[[0-9]m/}
+	s=$(printf '%s' "$s" | sed $'s/\033\\[[0-9;]*m//g')
+	width "$s"
+}
+
+# A coloured string padded to $2 visible columns, or centred in them when $3 is "c" (an odd remainder goes right, so items of
+# the same parity share a centre).
+vpad() {
+	local pad left
+	pad=$(($2 - $(vwidth "$1")))
+	[ "$pad" -lt 0 ] && pad=0
+	if [ "${3-}" = c ]; then
+		left=$((pad / 2))
+		printf '%*s%s%*s' "$left" '' "$1" $((pad - left)) ''
+	else
+		printf '%s%*s' "$1" "$pad" ''
 	fi
-	detail "$(l location)" "$(joined "$(v quick.location.country)" "$(v quick.location.region)" "$(v quick.location.city)")" "$lw"
-	[ -n "$(v quick.registrationCountryCode)" ] && printf '  %s%s\n' "$(cell "$(l registration)" "$lw" dim)" "$(joined "$(v quick.registrationCountryCode)" "$(v quick.registry)")"
-	local human automated i split at bar=''
+}
+
+# A label (text on the style's background) one space wider inside when needed, so its width has the parity of $3 and it
+# centres exactly under a heading $3 wide.
+plabel() {
+	local text=" $1 "
+	[ $((($(width "$text") - $3) % 2)) != 0 ] && text="$text "
+	paint "$2" "$text"
+}
+
+# Complete text in lines of at most $2 columns, joined with NL for a cell.
+wrap_cell() {
+	local out
+	out=$(wrap_text "$1" "$2")
+	printf '%s' "${out//$'\n'/$NL}"
+}
+
+# Non-empty parts joined with ", " (a location as the result page writes it), skipping a part equal to the one before it.
+joined_comma() {
+	local out='' part last=''
+	for part in "$@"; do
+		[ -z "$part" ] && continue
+		[ "$part" = "$last" ] && continue
+		out=${out:+$out, }$part
+		last=$part
+	done
+	printf '%s' "$out"
+}
+
+row() { printf '%s%s%s%s%s\n' "$1" "$US" "$2" "$US" "$3"; }
+
+# The value-column width for the current layout.
+value_width() {
+	local n=0 f
+	for f in $FAMS; do n=$((n + 1)); done
+	if [ "$WIDE" = 1 ]; then printf '%s' $(((COLS - LW) / n)); else printf '%s' $((COLS - LW)); fi
+}
+
+# Prints one section from the row function $1, called once per family in FAMS with F and CW set.
+emit() {
+	local fn=$1 f keys=$'\n' line key label cell n=0 i j max part
+	CW=$(value_width)
+	for f in $FAMS; do
+		F=$f
+		printf -v "ROWS_$f" '%s' "$("$fn" "$f")"
+		local ref=ROWS_$f
+		while IFS= read -r line; do
+			[ -z "$line" ] && continue
+			key=${line%%"$US"*}
+			case $keys in *$'\n'"$key"$'\n'*) ;; *) keys=$keys$key$'\n' ;; esac
+		done <<<"${!ref}"
+		n=$((n + 1))
+	done
+	if [ "$WIDE" = 1 ]; then
+		for key in $keys; do
+			label='' i=0
+			local -a left=() right=()
+			for f in $FAMS; do
+				local ref=ROWS_$f cells=()
+				while IFS= read -r line; do
+					[ "${line%%"$US"*}" = "$key" ] || continue
+					line=${line#*"$US"}
+					[ -z "$label" ] && label=${line%%"$US"*}
+					cell=${line#*"$US"}
+					while IFS= read -r part; do cells[${#cells[@]}]=$part; done <<<"${cell//$NL/$'\n'}"
+				done <<<"${!ref}"
+				if [ "$i" = 0 ]; then left=("${cells[@]}"); else right=("${cells[@]}"); fi
+				i=$((i + 1))
+			done
+			max=${#left[@]}; [ "${#right[@]}" -gt "$max" ] && max=${#right[@]}
+			j=0
+			while [ "$j" -lt "$max" ]; do
+				if [ "$j" = 0 ]; then printf '%s' "$(vpad "  $label" "$LW")"; else printf '%*s' "$LW" ''; fi
+				printf '%s%s\n' "$(vpad "${left[$j]-}" "$CW")" "${right[$j]-}"
+				j=$((j + 1))
+			done
+		done
+		return
+	fi
+	i=0
+	for f in $FAMS; do
+		if [ "$n" -gt 1 ]; then [ "$i" -gt 0 ] && printf '\n'; printf '  %s\n' "$(paint head "IPv$f")"; fi
+		local ref=ROWS_$f
+		while IFS= read -r line; do
+			[ -z "$line" ] && continue
+			line=${line#*"$US"}; label=${line%%"$US"*}; cell=${line#*"$US"}
+			j=0
+			while IFS= read -r part; do
+				if [ "$j" = 0 ]; then printf '%s' "$(vpad "  $label" "$LW")"; else printf '%*s' "$LW" ''; fi
+				printf '%s\n' "$part"; j=$((j + 1))
+			done <<<"${cell//$NL/$'\n'}"
+		done <<<"${!ref}"
+		i=$((i + 1))
+	done
+}
+
+# A section title, numbered in the order shown ("一、" in Chinese, "1." in English). With "families", the family names head
+# the value columns when they stand side by side or there is only one.
+SECTION=0
+section() {
+	local n line f count=0
+	SECTION=$((SECTION + 1))
+	if [ "$LANG_UI" = zh ]; then
+		case $SECTION in 1) n='一、' ;; 2) n='二、' ;; 3) n='三、' ;; 4) n='四、' ;; 5) n='五、' ;; *) n='六、' ;; esac
+	else
+		n="$SECTION. "
+	fi
+	line=$(paint head "$n$1")
+	for f in $FAMS; do count=$((count + 1)); done
+	if [ "${2-}" = families ] && { [ "$WIDE" = 1 ] || [ "$count" = 1 ]; }; then
+		local heads=''
+		CW=$(value_width)
+		for f in $FAMS; do heads="$heads$(vpad "$(paint head "IPv$f")" "$CW")"; done
+		# The family names head the value columns: on the title's line when it leaves room, else on the next one.
+		if [ $(($(vwidth "$line") + 1)) -lt "$LW" ]; then line="$(vpad "$line" "$LW")$heads"
+		else line="$line"$'\n'"$(printf '%*s' "$LW" '')$heads"; fi
+	fi
+	printf '\n%s\n' "$line"
+}
+
+# A value, its 20-cell scale and a word.
+scaled() { printf '%s %s  %s' "$(paint "$2" "$(printf '%-3s' "$1")")" "$(scale "$1" "$3")" "$(paint "$2" "$4")"; }
+
+# 1. IP score: the IPLense score and the purity risk value.
+rows_score() {
+	local score purity tone level
+	score=$(v quick.score)
+	purity=$(v quick.purity.value)
+	if [ -n "$score" ]; then
+		if [ "$score" -ge 80 ]; then level=high; elif [ "$score" -ge 60 ]; then level=medium; else level=low; fi
+		row score "IPLense $(l score)" "$(scaled "$score" "$(score_tone "$score")" score "$(l "grade_$level")")"
+	fi
+	if [ -n "$purity" ]; then
+		case $(v quick.purity.state) in good) tone=pos level=low ;; average) tone=neu level=medium ;; *) tone=neg level=high ;; esac
+		row purity "$(l purity)" "$(scaled "$purity" "$tone" risk "$(t "risk_$level")")"
+	fi
+}
+
+# A Quick type label in a column of fixed width, so the names after it start in one column.
+type_label() { vpad "$(label "$(quick_type_text "$1")" 0 "$(quick_type_style "$1")")" 6; }
+
+# 2. Basics: the result page's network and location rows, the IP property under the operator.
+rows_basics() {
+	local name company type nature property human automated i split at bar='' registry nature_style property_style
+	name=$(v quick.asn.name) type=$(v quick.asn.type)
+	row asn "$(t asn_name)" "${type:+$(type_label "$type") }$(wrap_cell "${name:-$MARK_NONE}" $((CW - 8)))"
+	company=$(v quick.company.name) type=$(v quick.company.type)
+	row operator "$(l operator)" "${type:+$(type_label "$type") }$(wrap_cell "${company:-$MARK_NONE}" $((CW - 8)))"
+	nature=$(v quick.ipNature) property=$(v quick.ipProperty)
+	case $nature in Native) nature_style=bpos ;; Broadcast) nature_style=bneu ;; Unknown | '') nature_style=bnone ;; *) nature_style=bneg ;; esac
+	case $property in Residential | HomeBroadband | Education | Government) property_style=bpos ;; Business) property_style=bneu ;; Unknown | '') property_style=bnone ;; *) property_style=bneg ;; esac
+	row property "$(l ipProperty)" "$(label "$(l "nature_${nature:-Unknown}")" 0 "$nature_style") $(label "$(l "property_${property:-Unknown}")" 0 "$property_style")"
+	row number "$(t as_number)" "AS$(v quick.asn.number)"
 	human=$(v quick.traffic.humanPercent) automated=$(v quick.traffic.automatedPercent)
-	# As the result page shows them: rounded to two decimals, trailing zeros dropped.
 	[ -n "$human" ] && human=$(percent "$human")
 	[ -n "$automated" ] && automated=$(percent "$automated")
 	if [ -n "$human" ]; then
 		split=$(awk -v h="$human" 'BEGIN {print int(h / 5)}')
 		at=$((split + 1)); [ "$at" -gt 20 ] && at=20
 		i=1
-		while [ "$i" -le 20 ]; do
+		split=$(awk -v h="$human" 'BEGIN {print int(h * 16 / 100)}')
+		at=$((split + 1)); [ "$at" -gt 16 ] && at=16
+		while [ "$i" -le 16 ]; do
 			if [ "$i" = "$at" ]; then bar=$bar$(paint bold "$BAR_AT")
 			elif [ "$i" -le "$split" ]; then bar=$bar$(paint pos "$BAR")
 			else bar=$bar$(paint head "$BAR"); fi
 			i=$((i + 1))
 		done
-		printf '  %s%s %s  %s  %s %s\n' "$(cell "$(l asnTraffic)" "$lw" dim)" "$(l humanTraffic)" "$human%" "$bar" "$(l automatedTraffic)" "${automated:-$MARK_NONE}%"
+		row traffic "$(l asnTraffic)" "$(paint dim "$(t human)") $(paint pos "$human%") $bar $(paint dim "$(t automated)") $(paint neg "${automated:-$MARK_NONE}%")"
 	else
-		printf '  %s%s\n' "$(cell "$(l asnTraffic)" "$lw" dim)" "$MARK_NONE"
+		row traffic "$(l asnTraffic)" "$MARK_NONE"
 	fi
+	registry=$(v quick.registry)
+	row registered "$(t registered_in)" "$(v quick.registrationCountryCode)${registry:+  $(paint dim "$registry")}"
+	row used "$(t used_in)" "$(wrap_cell "$(joined_comma "$(v quick.location.city)" "$(v quick.location.region)" "$(v quick.location.country)")" "$CW")"
 	if [ "$FULL" = 1 ]; then
-		detail "$(l networkRange)" "$(joined "$(v quick.asn.route)" "$(v quick.company.netname)")" "$lw"
-		detail "$(l reverseDns)" "$(v reverseDns)" "$lw"
+		row range "$(l networkRange)" "$(wrap_cell "$(joined "$(v quick.asn.route)" "$(v quick.company.netname)")" "$CW")"
+		row ptr "$(l reverseDns)" "$(wrap_cell "$(v reverseDns)" "$CW")"
 	fi
-	nature=$(v quick.ipNature)
-	property=$(v quick.ipProperty)
-	case $nature in Native) nature_style=bpos ;; Broadcast) nature_style=bneu ;; Unknown | '') nature_style=bnone ;; *) nature_style=bneg ;; esac
-	case $property in Residential | HomeBroadband | Education | Government) property_style=bpos ;; Business) property_style=bneu ;; Unknown | '') property_style=bnone ;; *) property_style=bneg ;; esac
-	printf '  %s%s %s\n' "$(cell "$(l ipProperty)" "$lw" dim)" "$(label "$(l "nature_${nature:-Unknown}")" 0 "$nature_style")" \
-		"$(label "$(l "property_${property:-Unknown}")" 0 "$property_style")"
+}
+
+TY=10
+# 3. Multi-source IP types: a row per source with its location and its usage and company types, centred under their headings.
+rows_types() {
+	local list provider li ti state loc uw cw lw head locs=() k usage company u c
+	lw=$((CW - 2 * TY - 2)); [ "$lw" -gt 22 ] && lw=22
+	uw=$(width "$(l usageType)") cw=$(width "$(l companyType)")
+	head=$(l location)
+	row _head "$(paint dim "$(l colSource)")" "$(vpad "$(paint dim "$head")" "$lw")$(vpad "$(paint dim "$(l usageType)")" "$TY" c)$(vpad "$(paint dim "$(l companyType)")" "$TY" c)"
+	IFS=$'\n' read -r -d '' -a list < <(providers)
+	for provider in "${list[@]}"; do
+		li=$(index_of locations "$provider")
+		ti=$(index_of types "$provider")
+		[ -z "$li$ti" ] && continue
+		state=$(provider_state "$provider")
+		if [ "$state" != Success ]; then
+			module_text "$state"
+			row "$provider" "$(paint bold "$(brand "$provider")")" "$(paint "$MS" "$MT")"
+			continue
+		fi
+		loc=''
+		if [ -n "$li" ] && [ "$(v "professional.locations.$li.state")" = Success ]; then
+			loc=$(joined_comma "$(v "professional.locations.$li.city")" "$(v "professional.locations.$li.countryCode")")
+		elif [ -n "$li" ]; then module_text "$(v "professional.locations.$li.state")"; loc=$MT
+		fi
+		locs=()
+		while IFS= read -r k; do locs[${#locs[@]}]=$k; done <<<"$(wrap_text "${loc:-$MARK_NONE}" $((lw - 2)))"
+		if [ -n "$ti" ] && [ "$(row_type_state "$ti")" = Success ]; then
+			usage=$(v "professional.types.$ti.usageType") company=$(v "professional.types.$ti.companyType")
+			u=$(paint none "$MARK_NONE"); c=$u
+			[ -n "$usage" ] && u=$(plabel "$(type_text "$usage")" "$(type_style "$usage")" "$uw")
+			[ -n "$company" ] && c=$(plabel "$(type_text "$company")" "$(type_style "$company")" "$cw")
+			u=$(vpad "$u" "$TY" c) c=$(vpad "$c" "$TY" c)
+		elif [ -n "$ti" ]; then module_text "$(row_type_state "$ti")"; u=$(paint "$MS" "$MT") c=''
+		else u=$(vpad "$(paint none "$MARK_NONE")" "$TY" c) c=$u; fi
+		local cell
+		cell="$(vpad "${locs[0]}" "$lw")$u$c"
+		k=1
+		while [ "$k" -lt "${#locs[@]}" ]; do cell="$cell$NL${locs[$k]}"; k=$((k + 1)); done
+		row "$provider" "$(paint bold "$(brand "$provider")")" "$cell"
+	done
+}
+
+# 4. Multi-source IP risk: each source's risk value and level, and the seven factor marks centred under their headings.
+RV=13
+rows_risk() {
+	local list provider ri column c value level tone marks head w off signals state word
+	head=$(l colRiskValue)
+	head=$(vpad "$(paint dim "$head")" "$RV")
+	for column in $COLUMNS_RISK; do
+		w=$(($(width "$(l "column_${column%%:*}")") + 1)); [ "$w" -lt 4 ] && w=4
+		head="$head$(vpad "$(paint dim "$(l "column_${column%%:*}")")" "$w")"
+	done
+	row _head "$(paint dim "$(l colSource)")" "$head"
+	IFS=$'\n' read -r -d '' -a list < <(providers)
+	for provider in "${list[@]}"; do
+		ri=$(index_of riskSources "$provider")
+		[ -z "$ri" ] && continue
+		state=$(row_risk_state "$ri")
+		if [ "$(provider_state "$provider")" != Success ] || [ "$state" != Success ]; then
+			module_text "$state"
+			row "$provider" "$(paint bold "$(brand "$provider")")" "$(paint "$MS" "$MT")"
+			continue
+		fi
+		value=$(v "professional.riskSources.$ri.score.value")
+		level=$(v "professional.riskSources.$ri.score.level")
+		if [ -n "$value" ]; then
+			value=${value%%.*}; tone=$(risk_tone "$value")
+			case $tone in pos) word=$(t risk_low) ;; neu) word=$(t risk_medium) ;; *) word=$(t risk_high) ;; esac
+			value="$value $word"
+		elif [ -n "$level" ]; then
+			level=$(printf '%s' "$level" | tr '[:upper:]' '[:lower:]')
+			case $level in low) tone=pos ;; medium) tone=neu ;; *) level=high tone=neg ;; esac
+			value=$(t "risk_$level")
+		else value=$MARK_NONE tone=none; fi
+		marks=$(vpad "$(paint "$tone" "$value")" "$RV")
+		signals=$(signal_states "$ri")
+		for column in $COLUMNS_RISK; do
+			w=$(($(width "$(l "column_${column%%:*}")") + 1)); [ "$w" -lt 4 ] && w=4
+			off=$((($(width "$(l "column_${column%%:*}")") - 1) / 2))
+			case $(risk_mark "$signals" "${column#*:}") in
+			detected) c=$(paint neg "$MARK_HIT") ;; clear) c=$(paint pos "$MARK_CLEAR") ;; *) c=$(paint none "$MARK_NONE") ;;
+			esac
+			marks="$marks$(printf '%*s' "$off" '')$(vpad "$c" $((w - off)))"
+		done
+		row "$provider" "$(paint bold "$(brand "$provider")")" "$marks"
+	done
 }
 
 # A provider's state across its modules: Success when any of them succeeded, else QuotaUnavailable or Error.
@@ -599,132 +843,12 @@ provider_state() {
 	case " $states " in *Success*) printf Success ;; *Quota*) printf QuotaUnavailable ;; *) printf Error ;; esac
 }
 
-# A provider none of whose modules answered, named once with the reason (in the first section that lists it), its name in
-# a column $3 wide.
-render_failed_provider() {
-	if [ "$2" = QuotaUnavailable ]; then
-		printf '  %s%s\n' "$(cell "$(brand "$1")" "$3" bold)" "$(paint neu "$(l rowQuota)")"
-	else
-		printf '  %s%s\n' "$(cell "$(brand "$1")" "$3" bold)" "$(paint neg "$(l rowError)")"
-	fi
-}
-
 # A module that did not answer, as text and style in MT and MS.
 module_text() {
 	case $1 in
 	QuotaUnavailable) MT=$(l quotaUnavailable) MS=neu ;;
 	*) MT=$(l error) MS=neg ;;
 	esac
-}
-
-# Section two for a family: a row per source with its location and its usage and company types as labels, at every width.
-render_types() {
-	local list provider li ti n=0 state name_w loc_w uw cw over key failed='' usage company
-	F=$1
-	SB_NAMES=() SB_T0=() SB_S0=() SB_T1=() SB_S1=() SB_T2=() SB_S2=()
-	IFS=$'\n' read -r -d '' -a list < <(providers)
-	for provider in "${list[@]}"; do
-		li=$(index_of locations "$provider")
-		ti=$(index_of types "$provider")
-		[ -z "$li$ti" ] && continue
-		state=$(provider_state "$provider")
-		if [ "$state" != Success ]; then
-			failed=$failed$provider$'\t'$state$'\n'
-			name_w=$(max "${name_w:-0}" "$(width "$(brand "$provider")")")
-			continue
-		fi
-		SB_NAMES[n]=$(brand "$provider")
-		name_w=$(max "${name_w:-0}" "$(width "${SB_NAMES[n]}")")
-		if [ -z "$li" ]; then
-			SB_T0[n]=$MARK_NONE SB_S0[n]=none
-		elif [ "$(v "professional.locations.$li.state")" = Success ]; then
-			SB_T0[n]=$(joined "$(v "professional.locations.$li.countryCode")" "$(v "professional.locations.$li.city")") SB_S0[n]=''
-			[ -z "${SB_T0[n]}" ] && SB_T0[n]=$MARK_NONE SB_S0[n]=none
-		else
-			module_text "$(v "professional.locations.$li.state")"
-			SB_T0[n]=$MT SB_S0[n]=$MS
-		fi
-		# A module that did not answer is said once, in the usage cell.
-		if [ -z "$ti" ]; then
-			SB_T1[n]=" $MARK_NONE" SB_S1[n]=none SB_T2[n]=" $MARK_NONE" SB_S2[n]=none
-		elif [ "$(row_type_state "$ti")" = Success ]; then
-			usage=$(v "professional.types.$ti.usageType")
-			company=$(v "professional.types.$ti.companyType")
-			SB_T1[n]=$(type_text "$usage") SB_S1[n]=$(type_style "$usage")
-			if [ -n "$company" ]; then SB_T2[n]=$(type_text "$company") SB_S2[n]=$(type_style "$company"); else SB_T2[n]=" $MARK_NONE" SB_S2[n]=none; fi
-		else
-			module_text "$(row_type_state "$ti")"
-			SB_T1[n]=$MT SB_S1[n]=$MS SB_T2[n]='' SB_S2[n]=''
-		fi
-		n=$((n + 1))
-	done
-	# Each column is as wide as its widest content and two spaces; the type headings start where the label text does.
-	name_w=$(($(max "${name_w:-0}" "$(width "$(l colSource)")") + 2))
-	if [ "$n" -gt 0 ]; then
-		loc_w=$(width "$(l location)")
-		uw=$(($(width "$(l usageType)") + 1))
-		cw=$(($(width "$(l companyType)") + 1))
-		key=0
-		while [ "$key" -lt "$n" ]; do
-			loc_w=$(max "$loc_w" "$(width "${SB_T0[$key]}")")
-			case ${SB_S1[$key]} in
-			b* | none)
-				uw=$(max "$uw" "$(cell_width "${SB_T1[$key]}" "${SB_S1[$key]}")")
-				cw=$(max "$cw" "$(cell_width "${SB_T2[$key]}" "${SB_S2[$key]}")")
-				;;
-			esac
-			key=$((key + 1))
-		done
-		loc_w=$((loc_w + 2)) uw=$((uw + 2)) cw=$((cw + 2))
-		# Wrap long locations within the room left; keep every character.
-		over=$((2 + name_w + loc_w + uw + cw - COLS))
-		[ "$over" -gt 0 ] && loc_w=$((loc_w - over))
-		printf '  %s%s%s%s\n' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l location)" "$loc_w" dim)" "$(cell " $(l usageType)" "$uw" dim)" \
-			"$(cell " $(l companyType)" "$cw" dim)"
-		key=0
-		while [ "$key" -lt "$n" ]; do
-			local positions=() position j=0
-			while IFS= read -r position; do positions[${#positions[@]}]=$position; done <<<"$(wrap_text "${SB_T0[$key]}" $((loc_w - 2)))"
-			printf '  %s%s' "$(cell "${SB_NAMES[$key]}" "$name_w" bold)" "$(any_cell "${positions[0]}" "$loc_w" "${SB_S0[$key]}")"
-			case ${SB_S1[$key]} in
-			b* | none) printf '%s%s\n' "$(any_cell "${SB_T1[$key]}" "$uw" "${SB_S1[$key]}")" "$(any_cell "${SB_T2[$key]}" "$cw" "${SB_S2[$key]}")" ;;
-			*) printf '%s\n' "$(paint "${SB_S1[$key]}" "${SB_T1[$key]}")" ;;
-			esac
-			j=1
-			while [ "$j" -lt "${#positions[@]}" ]; do
-				printf '  %*s%s\n' "$name_w" '' "$(paint "${SB_S0[$key]}" "${positions[$j]}")"; j=$((j + 1))
-			done
-			key=$((key + 1))
-		done
-	fi
-	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$name_w"; done
-}
-
-# Section three for a family: the IPLense score and purity risk value on their scales, then each source's risk value
-# coloured by the same thresholds in the combined seven-factor table.
-render_risk() {
-	local lw vw score purity tone level
-	F=$1
-	score=$(v quick.score)
-	purity=$(v quick.purity.value)
-	lw=$(max 15 "$(width "IPLense $(l score)")")
-	lw=$(max "$lw" "$(width "$(l purity) $(l purityRisk)")")
-	lw=$((lw + 2))
-	vw=$(max 6 "$(width "$(l colRiskValue)")")
-	if [ -n "$score" ]; then
-		# The score's grade word, as the result page shows it, so a higher score does not read like a higher risk value.
-		if [ "$score" -ge 80 ]; then level=high; elif [ "$score" -ge 60 ]; then level=medium; else level=low; fi
-		printf '  %s%s  %s  %s\n' "$(cell "IPLense $(l score)" "$lw" dim)" "$(cell "$score" "$vw" "$(score_tone "$score")" r)" \
-			"$(scale "$score" score)" "$(paint "$(score_tone "$score")" "$(l "grade_$level")")"
-	fi
-	if [ -n "$purity" ]; then
-		case $(v quick.purity.state) in good) tone=pos level=low ;; average) tone=neu level=medium ;; *) tone=neg level=high ;; esac
-		printf '  %s%s  %s  %s\n' "$(cell "$(l purity) $(l purityRisk)" "$lw" dim)" "$(cell "$purity/100" "$vw" "$tone" r)" \
-			"$(scale "$purity" risk)" "$(paint "$tone" "$(l "level_$level")")"
-	fi
-
-	printf '\n'
-	render_factors "$1"
 }
 
 # A module state of a type row: quota or failure in either field stands for the whole row (as on the web).
@@ -764,136 +888,177 @@ risk_mark() {
 	printf '%s' "$found"
 }
 
-# The combined risk matrix: one source per row, its value and seven factor columns.
-render_factors() {
-	local name_w provider ri column mark list names=() rows=() n signals widths=() c value level tone risk_w state failed='' li ti value_lines=() line j
-	F=$1
-	IFS=$'\n' read -r -d '' -a list < <(providers)
-	for provider in "${list[@]}"; do
-		ri=$(index_of riskSources "$provider")
-		[ -z "$ri" ] && continue
-		if [ "$(provider_state "$provider")" != Success ]; then
-			li=$(index_of locations "$provider"); ti=$(index_of types "$provider")
-			[ -z "$li$ti" ] && failed=$failed$provider$'\t'$(provider_state "$provider")$'\n'
-			continue
-		fi
-		names[${#names[@]}]=$provider
-		rows[${#rows[@]}]=$ri
-	done
-	if [ "${#rows[@]}" -eq 0 ]; then
-		printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$(($(width "$(brand "$provider")") + 2))"; done
-		return
-	fi
-	# Each column is as wide as its heading or widest name and two spaces (a mark is one column).
-	name_w=$(width "$(l colSource)")
-	n=0
-	while [ "$n" -lt "${#names[@]}" ]; do name_w=$(max "$name_w" "$(width "$(brand "${names[$n]}")")"); n=$((n + 1)); done
-	name_w=$((name_w + 2))
-	risk_w=$(($(width "$(l colRiskValue)") + 2))
-	printf '  %s%s' "$(cell "$(l colSource)" "$name_w" dim)" "$(cell "$(l colRiskValue)" "$risk_w" dim)"
-	c=0
-	for column in $COLUMNS_RISK; do
-		widths[c]=$(($(width "$(l "column_${column%%:*}")") + 2))
-		printf '%s' "$(cell "$(l "column_${column%%:*}")" "${widths[c]}" dim)"
-		c=$((c + 1))
-	done
-	printf '\n'
-	n=0
-	while [ "$n" -lt "${#rows[@]}" ]; do
-		printf '  %s' "$(cell "$(brand "${names[$n]}")" "$name_w" bold)"
-		value=$(v "professional.riskSources.${rows[$n]}.score.value")
-		level=$(v "professional.riskSources.${rows[$n]}.score.level")
-		if [ -n "$value" ]; then value=${value%%.*}; tone=$(risk_tone "$value")
-		elif [ -n "$level" ]; then
-			level=$(printf '%s' "$level" | tr '[:upper:]' '[:lower:]')
-			case $level in low) tone=pos ;; medium) tone=neu ;; *) tone=neg ;; esac
-			value=$(l "level_$level")
-		else value=$MARK_NONE; tone=none; fi
-		state=$(row_risk_state "${rows[$n]}")
-		signals=$(signal_states "${rows[$n]}")
-		if [ "$state" != Success ]; then module_text "$state"; value=$MT; tone=$MS; signals=','; fi
-		value_lines=()
-		while IFS= read -r line; do value_lines[${#value_lines[@]}]=$line; done <<<"$(wrap_text "$value" $((risk_w - 2)))"
-		printf '%s' "$(cell "${value_lines[0]}" "$risk_w" "$tone")"
-		c=0
-		for column in $COLUMNS_RISK; do
-			mark=$(risk_mark "$signals" "${column#*:}")
-			case $mark in
-			detected) printf '%s' "$(cell "$MARK_HIT" "${widths[c]}" neg)" ;;
-			clear) printf '%s' "$(cell "$MARK_CLEAR" "${widths[c]}" pos)" ;;
-			*) printf '%s' "$(cell "$MARK_NONE" "${widths[c]}" none)" ;;
-			esac
-			c=$((c + 1))
-		done
-		printf '\n'
-		j=1
-		while [ "$j" -lt "${#value_lines[@]}" ]; do
-			printf '  %*s%s\n' "$name_w" '' "$(paint "$tone" "${value_lines[$j]}")"
-			j=$((j + 1))
-		done
-		n=$((n + 1))
-	done
-	printf '%s' "$failed" | while IFS=$'\t' read -r provider state; do render_failed_provider "$provider" "$state" "$name_w"; done
-}
-
-# The matrix's legend, once under every family's matrix.
+# The matrix's legend, once under the section.
 render_legend() {
-	printf '  %s %s  %s %s  %s %s\n' "$(paint neg "$MARK_HIT")" "$(l cell_detected)" "$(paint pos "$MARK_CLEAR")" "$(l cell_clear)" \
-		"$(paint none "$MARK_NONE")" "$(l cell_none)"
+	printf '  %s %s   %s %s   %s %s\n' "$(paint neg "$MARK_HIT")" "$(paint dim "$(l cell_detected)")" "$(paint pos "$MARK_CLEAR")" \
+		"$(paint dim "$(l cell_clear)")" "$(paint none "$MARK_NONE")" "$(paint dim "$(l cell_none)")"
 }
 
-# The five-section report; the first three sections need at least one self-check result.
+# The report: header, report link, then the sections that have results.
 render_report() {
-	local family count=0 block blocks out
+	local family count=0
 	for family in $RESULTS; do count=$((count + 1)); done
 	render_header
+	[ -n "$REPORT_LINES" ] && printf '%s\n' "$REPORT_LINES"
+	for family in $FAMILIES; do
+		case " $RESULTS " in *" $family "*) ;; *) render_failure "$family" ;; esac
+	done
+	FAMS=${RESULTS# }
+	WIDE=0
+	[ "$count" = 2 ] && [ "$COLS" -ge 120 ] && WIDE=1
 	if [ "$count" -gt 0 ]; then
-		F=${RESULTS# }
-		F=${F%% *}
-		section "$(l sectionBasic)"
-		for family in $FAMILIES; do
-			case " $RESULTS " in
-			*" $family "*)
-				if [ "$FAMILIES" != "$family" ]; then
-					[ "$family" != "${FAMILIES%% *}" ] && printf '\n'
-					printf '  %s\n' "$(paint bold "IPv$family")"
-				fi
-				render_basic "$family"
-				;;
-			*)
-				[ "$family" != "${FAMILIES%% *}" ] && printf '\n'
-				render_failure "$family"
-				;;
-			esac
-		done
-		for block in types risk; do
-			blocks=''
-			for family in $RESULTS; do
-				F=$family
-				out=$("render_$block" "$family")
-				[ -z "$out" ] && continue
-				[ "$count" -gt 1 ] && out="  $(paint bold "IPv$family")"$'\n'$out
-				blocks=${blocks:+$blocks$'\n\n'}$out
-			done
-			[ -z "$blocks" ] && continue
-			F=${RESULTS# }
-			F=${F%% *}
-			case $block in types) section "$(l sectionTypes)" ;; risk) section "$(t section_risk)" ;; factors) section "$(l statRiskHits)" ;; esac
-			printf '%s\n' "$blocks"
-			[ "$block" = risk ] && render_legend
-		done
-	else
-		printf '\n'
-		for family in $FAMILIES; do render_failure "$family"; done
+		F=${FAMS%% *}
+		section "$(t section_score)" families; emit rows_score
+		section "$(t section_basics)" families; emit rows_basics
+		section "$(t section_types)" families; emit rows_types
+		section "$(t section_risk)" families; emit rows_risk; render_legend
 	fi
 	[ -n "$LOCAL_FAMILY" ] && render_local
 	render_footer
 }
 
-# The footer rule; the report link and CLI page follow after the report has been printed.
 render_footer() {
 	printf '\n%s\n' "$(paint dim "$(repeat "$BOX_H" "$COLS")")"
 }
+
+# A platform's result for one family: sets STATUS and REGION ("" when it has none).
+platform_result() {
+	local ref=LOCAL_RESULTS_$1 row
+	STATUS='' REGION=''
+	while IFS= read -r row; do
+		split_result "$row"
+		[ "$KEY" = "$2" ] && return
+	done <<<"${!ref}"
+	STATUS='' REGION=''
+}
+
+# A platform result as a label: unlocked green, blocked red, partial amber, failed grey.
+unlock_label() {
+	case $1 in
+	available | supported | region) printf '%s\t%s' "$(t unlocked)" bpos ;;
+	unavailable | unsupported) printf '%s\t%s' "$(t blocked)" bneg ;;
+	originals_only) printf '%s\t%s' "$(t originals_only)" bneu ;;
+	*) printf '%s\t%s' "$(t failed)" bnone ;;
+	esac
+}
+
+# 5. AI and streaming: platforms as columns, a label row and a region row per family, all starting at the column's left edge
+# (as in 1.2); a column is as wide as its name or widest label and two spaces. A platform with no address in a family leaves
+# that cell empty; one with none in any family shown is left out.
+render_platforms() {
+	local key keys='' family n i names text style lw=8 line regions has
+	for key in $PLATFORMS; do
+		has=0
+		for family in $LOCAL_FAMILIES; do platform_result "$family" "$key"; [ -n "$STATUS" ] && [ "$STATUS" != no_ipv6 ] && has=1; done
+		[ "$has" = 1 ] && keys="$keys $key"
+	done
+	set -f
+	local -a plist widths=()
+	read -r -a plist <<<"$keys"
+	set +f
+	n=${#plist[@]}
+	# A column is its name or its widest label (two wider than the word), and two columns between platforms.
+	i=0
+	while [ "$i" -lt "$n" ]; do
+		widths[i]=$(width "$(local_name "${plist[$i]}")")
+		for family in $LOCAL_FAMILIES; do
+			platform_result "$family" "${plist[$i]}"
+			[ -z "$STATUS" ] || [ "$STATUS" = no_ipv6 ] && continue
+			IFS=$'\t' read -r text style <<<"$(unlock_label "$STATUS")"
+			widths[i]=$(max "${widths[$i]}" $(($(width "$text") + 2)))
+		done
+		widths[i]=$((widths[i] + 2))
+		i=$((i + 1))
+	done
+	i=0
+	while [ "$i" -lt "$n" ]; do
+		# As many platforms as fit the line, at most six.
+		local used=$lw k=$i
+		while [ "$k" -lt "$n" ] && [ $((k - i)) -lt 6 ] && [ $((used + widths[k])) -le "$COLS" ]; do used=$((used + widths[k])); k=$((k + 1)); done
+		[ "$k" = "$i" ] && k=$((i + 1))
+		[ "$i" -gt 0 ] && printf '\n'
+		names=$(printf '%*s' "$lw" '')
+		local j=$i
+		while [ "$j" -lt "$k" ]; do names="$names$(vpad "$(paint bold "$(local_name "${plist[$j]}")")" "${widths[$j]}")"; j=$((j + 1)); done
+		printf '%s\n' "$names"
+		for family in $LOCAL_FAMILIES; do
+			line=$(vpad "  $(paint head "IPv$family")" "$lw") regions=$(printf '%*s' "$lw" '')
+			j=$i
+			while [ "$j" -lt "$k" ]; do
+				key=${plist[$j]}
+				platform_result "$family" "$key"
+				if [ -z "$STATUS" ] || [ "$STATUS" = no_ipv6 ]; then
+					line="$line$(printf '%*s' "${widths[$j]}" '')" regions="$regions$(printf '%*s' "${widths[$j]}" '')"
+				else
+					IFS=$'\t' read -r text style <<<"$(unlock_label "$STATUS")"
+					line="$line$(vpad "$(label "$text" 0 "$style")" "${widths[$j]}")"
+					regions="$regions$(vpad " $(paint dim "$REGION")" "${widths[$j]}")"
+				fi
+				j=$((j + 1))
+			done
+			printf '%s\n%s\n' "$line" "$regions"
+		done
+		i=$k
+	done
+}
+
+# 6. Outbound port 25 per family; where it is open, each mail provider's server after it, wrapped under the first.
+render_port25() {
+	local family line badge entry key state name text style indent=17
+	for family in $LOCAL_FAMILIES; do
+		platform_result "$family" port25
+		case $STATUS in available) text=$(t port_open) style=bpos ;; unavailable) text=$(t blocked) style=bneg ;; *) text=$(t failed) style=bnone ;; esac
+		line="$(vpad "  $(paint head "IPv$family")" 8)$(vpad "$(label "$text" 0 "$style")" 9)"
+		platform_result "$family" mail
+		if [ -n "$STATUS" ]; then
+			for entry in $STATUS $REGION; do
+				key=${entry%%:*} state=${entry#*:}
+				[ "$state" = no_ipv6 ] && continue
+				name=$(mail_name "$key")
+				case $state in open) style=bpos ;; closed) style=bneg ;; *) style=bnone ;; esac
+				badge="$(label "$name" 0 "$style") "
+				if [ $(($(vwidth "$line") + $(vwidth "$badge"))) -gt "$COLS" ]; then
+					printf '%s\n' "$line"
+					line=$(printf '%*s' "$indent" '')
+				fi
+				line="$line$badge"
+			done
+		fi
+		printf '%s\n' "$line"
+	done
+}
+
+mail_name() {
+	case $1 in
+	gmail) printf Gmail ;; outlook) printf Outlook ;; yahoo) printf Yahoo ;; apple) printf Apple ;; qq) printf QQ ;; mailru) printf Mail.ru ;;
+	aol) printf AOL ;; gmx) printf GMX ;; mailcom) printf Mail.com ;; netease) printf 163 ;; sohu) printf Sohu ;; sina) printf Sina ;;
+	esac
+}
+
+load_local() {
+	LOCAL_FAMILY=$1
+	local ref=LOCAL_RESULTS_$1
+	LOCAL_RESULTS=${!ref}
+	ref=LOCAL_EXIT_$1; LOCAL_EXIT=${!ref}
+	ref=CHECKED_IP_$1; CHECKED_IP=${!ref}
+}
+
+# Sections five and six; a family whose platforms saw a different exit than the IP checked says so first.
+render_local() {
+	local family
+	section "$(t platforms)"
+	for family in $LOCAL_FAMILIES; do
+		load_local "$family"
+		if [ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ]; then
+			printf '  %s  %s\n' "$(paint head "IPv$family")" "$(paint neu "$(tf local_exit "$(display_ip "$LOCAL_EXIT")")")"
+			printf '        %s\n' "$(paint dim "$(t local_exit_note)")"
+		fi
+	done
+	render_platforms
+	section "$(t port25)"
+	render_port25
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Local checks: what AI and streaming platforms and a mail server answer this machine. Each reads one to three responses
@@ -925,17 +1090,24 @@ SDN:SD SEN:SN SGP:SG SGS:GS SHN:SH SJM:SJ SLB:SB SLE:SL SLV:SV SMR:SM SOM:SO SPM
 SVK:SK SVN:SI SWE:SE SWZ:SZ SXM:SX SYC:SC SYR:SY TCA:TC TCD:TD TGO:TG THA:TH TJK:TJ TKL:TK TKM:TM TLS:TL TON:TO
 TTO:TT TUN:TN TUR:TR TUV:TV TWN:TW TZA:TZ UGA:UG UKR:UA UMI:UM URY:UY USA:US UZB:UZ VAT:VA VCT:VC VEN:VE VGB:VG
 VIR:VI VNM:VN VUT:VU WLF:WF WSM:WS YEM:YE ZAF:ZA ZMB:ZM ZWE:ZW'
-LOCAL_CHECKS='chatgpt claude gemini netflix disney youtube tiktok prime reddit port25'
+LOCAL_CHECKS='chatgpt claude gemini grok netflix disney youtube prime hbo paramount tiktok reddit port25'
+PLATFORMS='chatgpt claude gemini grok netflix disney youtube prime hbo paramount tiktok reddit'
 
 # One request over the local checks' family; sets PAGE (the body) and PAGE_STATUS ("<code> <final URL>", empty on failure).
 page() {
 	local out
 	out=$(curl "-$LOCAL_FAMILY" -sS -L --connect-timeout 8 --max-time 10 -A "$UA_BROWSER" -H 'Accept-Language: en' "$@" \
 		-w '\n%{http_code} %{url_effective}' 2>/dev/null)
-	local rc=$?
+	PAGE_RC=$?
 	PAGE_STATUS=${out##*$'\n'}
 	PAGE=${out%$'\n'*}
-	if [ "$rc" -ne 0 ] || [ "${PAGE_STATUS%% *}" = 000 ]; then PAGE_STATUS=; PAGE=; fi
+	if [ "$PAGE_RC" -ne 0 ] || [ "${PAGE_STATUS%% *}" = 000 ]; then PAGE_STATUS=; PAGE=; fi
+}
+
+# A check that got no answer: over IPv6, curl's "could not resolve" (6) means the platform has no IPv6 address at all, which is
+# not this IP's fault and is left out of the report; anything else is a failed check.
+fail() {
+	if [ "$LOCAL_FAMILY" = 6 ] && [ "${PAGE_RC-}" = 6 ]; then printf 'no_ipv6'; else printf 'failed'; fi
 }
 
 # The first capture of a regular expression in PAGE, or nothing.
@@ -992,7 +1164,7 @@ check_ai() {
 	exit=$(match $'\nip=([0-9A-Fa-f.:]+)')
 	region=$(match $'\nloc=([A-Z]{2})')
 	list=$(ai_list "$platform")
-	if [ -z "$region" ]; then answer=failed
+	if [ -z "$region" ]; then answer=$(fail)
 	elif [ -z "$list" ]; then answer="region $region"
 	elif case ",$list," in *",$region,"*) true ;; *) false ;; esac; then answer="supported $region"
 	else answer="unsupported $region"; fi
@@ -1008,10 +1180,10 @@ check_ai() {
 check_gemini() {
 	local regions region blocked verdict target='' flag=''
 	page https://gemini.google.com/
-	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
-	case $(url_path "${PAGE_STATUS#* }") in /sorry | /sorry/*) printf 'failed'; return ;; esac
-	case ${PAGE_STATUS%% *} in 403 | 451) printf 'unavailable'; return ;; 2??) ;; *) printf 'failed'; return ;; esac
-	[ -z "$PAGE" ] && { printf 'failed'; return; }
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
+	case $(url_path "${PAGE_STATUS#* }") in /sorry | /sorry/*) fail; return ;; esac
+	case ${PAGE_STATUS%% *} in 403 | 451) printf 'unavailable'; return ;; 2??) ;; *) fail; return ;; esac
+	[ -z "$PAGE" ] && { fail; return; }
 	regions=$(matches '(,2,1,200,|\[1,null,null,[0-9]+,[0-9]+,)\\?"([A-Z]{3})\\?"' 2)
 	for blocked in AFG CHN RUS BLR CUB IRN PRK SYR; do
 		case $'\n'$regions$'\n' in *$'\n'$blocked$'\n'*) printf 'unavailable %s' "$(alpha2 "$blocked")"; return ;; esac
@@ -1027,7 +1199,7 @@ check_gemini() {
 	else
 		case $(url_host "$target") in
 		notebook.google.com | notebooklm.google.com) printf 'available%s' "${region:+ $region}" ;;
-		*) printf 'failed' ;;
+		*) fail ;;
 		esac
 	fi
 }
@@ -1045,19 +1217,19 @@ alpha2() {
 check_netflix() {
 	local region original licensed
 	page https://www.netflix.com/title/81280792
-	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
 	original=$PAGE_STATUS
 	[[ $PAGE == *'Oh no!'* ]] && original=no
 	region=$(match '"id":"([A-Z]{2})","countryName"')
 	page https://www.netflix.com/title/70143836
-	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
 	licensed=$PAGE_STATUS
 	[[ $PAGE == *'Oh no!'* ]] && licensed=no
 	[ -z "$region" ] && region=$(match '"id":"([A-Z]{2})","countryName"')
 	if [ "${original%% *}" = 403 ] || { [ "$original" = no ] && [ "$licensed" = no ]; }; then printf 'unavailable'
 	elif [ "$licensed" = no ] && [ -n "$region" ]; then printf 'originals_only %s' "$region"
 	elif [ "${licensed%% *}" = 200 ] && [ -n "$region" ]; then printf 'available %s' "$region"
-	else printf 'failed'; fi
+	else fail; fi
 }
 
 # Disney+: the live GraphQL registerDevice response supplies extensions.sdk.session's country and support flag.
@@ -1069,12 +1241,12 @@ check_disney() {
 	page https://disney.api.edge.bamgrid.com/graph/v1/device/graphql -X POST -H "authorization: $DISNEY_WEB_CLIENT_KEY" \
 		-H 'Content-Type: application/json' \
 		-d '{"query":"mutation registerDevice($input: RegisterDeviceInput!) { registerDevice(registerDevice: $input) { grant { grantType } } }","variables":{"input":{"deviceFamily":"browser","applicationRuntime":"chrome","deviceProfile":"windows","deviceLanguage":"en","attributes":{"operatingSystem":"windows","operatingSystemVersion":"10.0"}}}}'
-	[ "${PAGE_STATUS%% *}" = 200 ] || { printf 'failed'; return; }
+	[ "${PAGE_STATUS%% *}" = 200 ] || { fail; return; }
 	region=$(match '"countryCode" *: *"([A-Z]{2})"')
 	supported=$(match '"inSupportedLocation" *: *(true|false)')
 	if [ -n "$region" ] && [ "$supported" = true ]; then printf 'available %s' "$region"
 	elif [ -n "$region" ] && [ "$supported" = false ]; then printf 'unavailable %s' "$region"
-	else printf 'failed'; fi
+	else fail; fi
 }
 
 # YouTube Premium: only a page where Premium is sold carries the purchase button or offer cards ("ad-free" also appears on the
@@ -1084,13 +1256,13 @@ check_disney() {
 check_youtube() {
 	local unavailable=''
 	page 'https://www.youtube.com/premium?hl=en'
-	[ -z "$PAGE_STATUS" ] && { printf 'failed'; return; }
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
 	case $(url_host "${PAGE_STATUS#* }") in
 	google.cn | *.google.cn) printf 'unavailable'; return ;;
-	consent.youtube.com | accounts.google.com) printf 'failed'; return ;;
+	consent.youtube.com | accounts.google.com) fail; return ;;
 	esac
-	case ${PAGE_STATUS%% *} in 2??) ;; *) printf 'failed'; return ;; esac
-	[ -z "$PAGE" ] && { printf 'failed'; return; }
+	case ${PAGE_STATUS%% *} in 2??) ;; *) fail; return ;; esac
+	[ -z "$PAGE" ] && { fail; return; }
 	shopt -s nocasematch
 	[[ $PAGE == *'premium is not available in your country'* || $PAGE == *'premium is not available in your region'* ]] && unavailable=1
 	shopt -u nocasematch
@@ -1099,7 +1271,7 @@ check_youtube() {
 		local region
 		region=$(single "$(matches '"(INNERTUBE_CONTEXT_GL|contentRegion|GL)" *: *"([A-Z]{2})"' 2)")
 		printf 'available%s' "${region:+ $region}"
-	else printf 'failed'; fi
+	else fail; fi
 }
 
 # TikTok (IPQuality): the explore page states the visitor's region (the home page answers curl with a challenge).
@@ -1107,15 +1279,61 @@ check_tiktok() {
 	local region
 	page https://www.tiktok.com/explore --compressed -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 	region=$(match '"region":"([A-Z]{2})"')
-	if [ -n "$region" ]; then printf 'available %s' "$region"; else printf 'failed'; fi
+	if [ -n "$region" ]; then printf 'available %s' "$region"; else fail; fi
 }
 
-# Prime Video (IPQuality): the home page states the current territory.
+# Prime Video (RegionRestrictionCheck, IPQuality): the home page flags a restricted service, else states the current territory.
 check_prime() {
 	local region
 	page https://www.primevideo.com
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
 	region=$(match '"currentTerritory":"([A-Z]{2})"')
-	if [ -n "$region" ]; then printf 'available %s' "$region"; else printf 'failed'; fi
+	if [[ $PAGE == *isServiceRestricted* ]]; then printf 'unavailable%s' "${region:+ $region}"
+	elif [ -n "$region" ]; then printf 'available %s' "$region"; else fail; fi
+}
+
+# Grok: grok.com answers 200 where it serves the visitor and 403 or 451 where it does not; the region is the one its own trace
+# states (Grok has no official region list to compare with).
+check_grok() {
+	local region code
+	page https://grok.com/cdn-cgi/trace
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
+	region=$(match $'\nloc=([A-Z]{2})')
+	page https://grok.com/
+	code=${PAGE_STATUS%% *}
+	case $code in
+	2??) printf 'available%s' "${region:+ $region}" ;;
+	403 | 451) printf 'unavailable%s' "${region:+ $region}" ;;
+	*) fail ;;
+	esac
+}
+
+# HBO Max (RegionRestrictionCheck, updated for the 2025 domain): the home page sets a countryCode cookie for the visitor and
+# lists the regions it serves; a country outside that list cannot subscribe.
+check_hbo() {
+	local region list
+	page https://www.hbomax.com/ -D -
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
+	region=$(match $'[Ss]et-[Cc]ookie: countryCode=([A-Za-z]{2})')
+	region=$(printf '%s' "$region" | tr '[:lower:]' '[:upper:]')
+	list=$(matches '"countryCode":"([a-z]{2})"' 1 | tr '[:lower:]' '[:upper:]')
+	[ -z "$region" ] || [ -z "$list" ] && { fail; return; }
+	case $'\n'$list$'\nUS\n' in *$'\n'"$region"$'\n'*) printf 'available %s' "$region" ;; *) printf 'unavailable %s' "$region" ;; esac
+}
+
+# Paramount+ (RegionRestrictionCheck): a visitor outside its regions is sent to /intl; 403 and 406 refuse the network.
+check_paramount() {
+	local region
+	page https://www.paramountplus.com/
+	[ -z "$PAGE_STATUS" ] && { fail; return; }
+	region=$(url_path "${PAGE_STATUS#* }")
+	region=${region#/}; region=${region%%/*}
+	case ${PAGE_STATUS%% *}:$region in
+	*:intl | 403:* | 406:*) printf 'unavailable' ;;
+	200:[a-z][a-z]) printf 'available %s' "$(printf '%s' "$region" | tr '[:lower:]' '[:upper:]')" ;;
+	200:*) printf 'available US' ;;
+	*) fail ;;
+	esac
 }
 
 # Reddit (IPQuality): the chat shell answers 200 with the visitor's country, or 403 where Reddit blocks the network.
@@ -1124,7 +1342,7 @@ check_reddit() {
 	case ${PAGE_STATUS%% *} in
 	200) printf 'available %s' "$(match 'country="([A-Z]{2})"')" ;;
 	403) printf 'unavailable' ;;
-	*) printf 'failed' ;;
+	*) fail ;;
 	esac
 }
 
@@ -1179,6 +1397,39 @@ check_port25() {
 	case $greeting in 220[\ -]*) printf 'available' ;; *) printf 'unavailable' ;; esac
 }
 
+# Mail providers (IPQuality's list): each domain's preferred mail server, looked up over DNS-over-HTTPS (no dig or nslookup is
+# assumed), is opened on port 25 over this family and must greet with 220. Run only where outbound port 25 is open; all twelve
+# at once, so the wait is one connection's. A provider whose server has no address in this family is "no_ipv6".
+MAIL_PROVIDERS='gmail:gmail.com outlook:outlook.com yahoo:yahoo.com apple:icloud.com qq:qq.com mailru:mail.ru aol:aol.com gmx:gmx.com mailcom:mail.com netease:163.com sohu:sohu.com sina:sina.com'
+
+mail_exchanger() {
+	curl "-$LOCAL_FAMILY" -sS --connect-timeout 5 --max-time 8 -H 'Accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$1&type=MX" 2>/dev/null |
+		grep -oE '"data": ?"[0-9]+ [^"]+"' | sed -E 's/"data": ?"//; s/"$//; s/\.$//' | sort -n | head -1 | awk '{print $2}'
+}
+
+check_mail_provider() {
+	local key=${1%%:*} domain=${1#*:} greeting
+	SMTP_HOST=$(mail_exchanger "$domain")
+	[ -n "$SMTP_HOST" ] || { printf '%s:failed' "$key"; return; }
+	SMTP_ADDRESS=$(smtp_address)
+	if [ -z "$SMTP_ADDRESS" ]; then
+		if [ "$LOCAL_FAMILY" = 6 ]; then printf '%s:no_ipv6' "$key"; else printf '%s:failed' "$key"; fi
+		return
+	fi
+	greeting=$(smtp_greeting)
+	case $greeting in 220[\ -]*) printf '%s:open' "$key" ;; *) printf '%s:closed' "$key" ;; esac
+}
+
+check_mail() {
+	local provider out
+	out=$(for provider in $MAIL_PROVIDERS; do (printf '%s\n' "$(check_mail_provider "$provider")") & done; wait)
+	# Back in the list's order, whatever order the connections finished in.
+	for provider in $MAIL_PROVIDERS; do
+		provider=${provider%%:*}
+		printf ' %s' "$(printf '%s\n' "$out" | grep -m1 "^$provider:")"
+	done
+}
+
 # Only -f asks the system resolver for a PTR; no host name is uploaded in a report.
 reverse_dns() {
 	case $(uname -s) in
@@ -1198,9 +1449,9 @@ ai_list() {
 
 local_name() {
 	case $1 in
-	chatgpt) printf ChatGPT ;; claude) printf Claude ;; gemini) printf Gemini ;; netflix) printf Netflix ;;
-	disney) printf 'Disney+' ;; youtube) printf 'YouTube Premium' ;; tiktok) printf TikTok ;; prime) printf 'Prime Video' ;;
-	reddit) printf Reddit ;; port25) t port25 ;;
+	chatgpt) printf ChatGPT ;; claude) printf Claude ;; gemini) printf Gemini ;; grok) printf Grok ;; netflix) printf Netflix ;;
+	disney) printf 'Disney+' ;; youtube) printf YouTube ;; prime) printf 'Amazon Prime' ;; hbo) printf HBO ;;
+	paramount) printf 'Paramount+' ;; tiktok) printf TikTok ;; reddit) printf Reddit ;; port25) t port25 ;; mail) t mail_progress ;;
 	esac
 }
 
@@ -1224,6 +1475,13 @@ run_local() {
 		*) LOCAL_RESULTS="$LOCAL_RESULTS$key $("check_$key")"$'\n' ;;
 		esac
 	done
+	# Where outbound 25 is open, each mail provider's own server.
+	case $'\n'$LOCAL_RESULTS in
+	*$'\nport25 available\n'*)
+		progress "$(t mail_progress)"
+		LOCAL_RESULTS="${LOCAL_RESULTS}mail$(check_mail)"$'\n'
+		;;
+	esac
 	clear_progress
 }
 
@@ -1236,126 +1494,19 @@ split_result() {
 	[ "$rest" != "$STATUS" ] && REGION=${rest#* }
 }
 
-# A horizontal table: platform headers stay whole and columns keep two blank columns between them; status cells wrap
-# within their column, and a table still wider than the terminal is split into two tables of consecutive platforms.
-platform_table() {
-	local keys=$1 key row n=0 i j count=1 lw used=2 widths=() full_widths=() names=() states=() regions=() styles=() lines=() text ref word w full_used gap=2
-	lw=$(max "$(width "$(t status)")" "$(width "$(t region_label)")")
-	lw=$((lw + gap)); used=$((used + lw)); full_used=$used
-	for key in $keys; do
-		names[n]=$(local_name "$key")
-		widths[n]=$(width "${names[$n]}")
-		while IFS= read -r row; do
-			split_result "$row"
-			[ "$KEY" = "$key" ] || continue
-			states[n]=$(local_status "$STATUS") styles[n]=$(local_style "$STATUS") regions[n]=$REGION
-		done <<<"$LOCAL_RESULTS"
-		w=${widths[$n]}
-		for word in ${states[$n]}; do w=$(max "$w" "$(width "$word")"); done
-		widths[n]=$((w + gap))
-		full_widths[n]=$(($(max "$w" "$(width "${states[$n]}")") + gap))
-		used=$((used + widths[n])); full_used=$((full_used + full_widths[n]))
-		n=$((n + 1))
-	done
-	if [ "$full_used" -le "$COLS" ]; then widths=("${full_widths[@]}")
-	elif [ "$used" -gt "$COLS" ] && [ "$n" -gt 1 ]; then
-		local half=$(((n + 1) / 2)) first='' second='' k=0
-		for key in $keys; do
-			if [ "$k" -lt "$half" ]; then first="$first $key"; else second="$second $key"; fi
-			k=$((k + 1))
-		done
-		platform_table "$first"
-		printf '\n'
-		platform_table "$second"
-		return
-	fi
-	i=0
-	while [ "$i" -lt "$n" ]; do
-		text=$(wrap_text "${states[$i]}" $((widths[i] - gap)))
-		printf -v "PLATFORM_LINES_$i" '%s' "$text"
-		j=0; while IFS= read -r row; do j=$((j + 1)); done <<<"$text"
-		count=$(max "$count" "$j"); i=$((i + 1))
-	done
-	printf '  %*s' "$lw" ''
-	i=0; while [ "$i" -lt "$n" ]; do printf '%s' "$(cell "${names[$i]}" "${widths[$i]}" bold)"; i=$((i + 1)); done
-	printf '\n'
-	j=0
-	while [ "$j" -lt "$count" ]; do
-		if [ "$j" = 0 ]; then printf '  %s' "$(cell "$(t status)" "$lw" dim)"; else printf '  %*s' "$lw" ''; fi
-		i=0
-		while [ "$i" -lt "$n" ]; do
-			ref=PLATFORM_LINES_$i; lines=()
-			while IFS= read -r row; do lines[${#lines[@]}]=$row; done <<<"${!ref}"
-			printf '%s' "$(cell "${lines[$j]-}" "${widths[$i]}" "${styles[$i]}")"
-			i=$((i + 1))
-		done
-		printf '\n'; j=$((j + 1))
-	done
-	printf '  %s' "$(cell "$(t region_label)" "$lw" dim)"
-	i=0; while [ "$i" -lt "$n" ]; do printf '%s' "$(cell "${regions[$i]}" "${widths[$i]}" '')"; i=$((i + 1)); done
-	printf '\n'
-}
-
-load_local() {
-	LOCAL_FAMILY=$1
-	local ref=LOCAL_RESULTS_$1
-	LOCAL_RESULTS=${!ref}
-	ref=LOCAL_EXIT_$1; LOCAL_EXIT=${!ref}
-	ref=CHECKED_IP_$1; CHECKED_IP=${!ref}
-}
-
-render_local() {
-	local family row differs suffix first=1
-	section "$(t platforms)"
-	for family in $LOCAL_FAMILIES; do
-		[ "$first" = 0 ] && printf '\n'
-		first=0
-		load_local "$family"
-		differs=0
-		[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=1
-		suffix=''
-		[ "$FAMILIES" != "$family" ] && suffix="IPv$family"
-		[ "$differs" = 1 ] && suffix=$(joined "$suffix" "$(tf local_exit "$(display_ip "$LOCAL_EXIT")")")
-		[ -n "$suffix" ] && printf '  %s\n' "$(paint bold "$suffix")"
-		[ "$differs" = 1 ] && printf '  %s\n' "$(paint dim "$(t local_exit_note)")"
-		platform_table 'chatgpt claude gemini'
-		printf '\n'
-		platform_table 'netflix disney youtube tiktok prime reddit'
-	done
-	section "$(t port25)"
-	for family in $LOCAL_FAMILIES; do
-		load_local "$family"
-		while IFS= read -r row; do
-			split_result "$row"
-			if [ "$KEY" = port25 ]; then
-				if [ "$FAMILIES" = "$family" ]; then printf '  %s\n' "$(label "$(local_status "$STATUS")" 0 "$(local_style "$STATUS")")"
-				else printf '  IPv%s  %s\n' "$family" "$(label "$(local_status "$STATUS")" 0 "$(local_style "$STATUS")")"; fi
-			fi
-		done <<<"$LOCAL_RESULTS"
-	done
-}
-
-# A local check's label colour, as the website shows platform access: available green, unavailable red, partial amber,
-# failed grey.
-local_style() {
-	case $1 in available | supported) printf bpos ;; unavailable | unsupported) printf bneg ;; originals_only) printf bneu ;; *) printf bnone ;; esac
-}
-
-local_status() {
-	case $1 in
-	supported) l aiSupported ;;
-	unsupported) l aiUnsupported ;;
-	region) printf '%s' "$MARK_NONE" ;;
-	available | unavailable | failed | originals_only) t "$1" ;;
-	esac
-}
-
 local_json() {
-	local row out='' IFS=$'\n'
+	local row out='' entry mail='' IFS=$'\n'
 	set -f
 	for row in $LOCAL_RESULTS; do
 		split_result "$row"
-		out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}"
+		if [ "$KEY" = mail ]; then
+			IFS=' '
+			for entry in $STATUS $REGION; do mail="$mail,\"${entry%%:*}\":\"${entry#*:}\""; done
+			IFS=$'\n'
+			out="$out,\"mail\":{${mail#,}}"
+		else
+			out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}"
+		fi
 	done
 	set +f
 	printf '{"family":%s,"exitIp":"%s"%s}' "$LOCAL_FAMILY" "$(display_ip "$LOCAL_EXIT")" "$out"
@@ -1385,21 +1536,24 @@ drop_local_family() {
 
 # Upload only the report contract; -f never changes the masked exit sent here.
 report_local_json() {
-	local row out='' port=failed differs=false exit=''
+	local row out='' port=failed differs=false exit='' mail='' entry key status
 	load_local "$1"
 	[ -n "$LOCAL_EXIT" ] && [ -n "$CHECKED_IP" ] && [ "$LOCAL_EXIT" != "$CHECKED_IP" ] && differs=true
 	[ "$differs" = true ] && exit=$(mask_ip "$LOCAL_EXIT")
 	while IFS= read -r row; do
 		[ -z "$row" ] && continue
 		split_result "$row"
-		if [ "$KEY" = port25 ]; then port=$STATUS
-		else
+		case $KEY in
+		port25) port=$STATUS ;;
+		mail)
+			for entry in $STATUS $REGION; do key=${entry%%:*} status=${entry#*:}; mail="$mail,\"$key\":\"$status\""; done ;;
+		*)
 			# Unknown alpha-3 codes can be displayed locally, but are not a report country code.
 			case $REGION in [A-Z][A-Z] | '') ;; *) REGION='' ;; esac
-			out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}"
-		fi
+			out="$out,\"$KEY\":{\"status\":\"$STATUS\",\"region\":\"$REGION\"}" ;;
+		esac
 	done <<<"$LOCAL_RESULTS"
-	printf '{"family":%s,"platforms":{%s},"port25":"%s","exitDiffers":%s,"exitIp":"%s"}' "$1" "${out#,}" "$port" "$differs" "$exit"
+	printf '{"family":%s,"platforms":{%s},"port25":"%s","mail":{%s},"exitDiffers":%s,"exitIp":"%s"}' "$1" "${out#,}" "$port" "${mail#,}" "$differs" "$exit"
 }
 
 # The report link and the CLI page link share one label column.
@@ -1420,7 +1574,7 @@ create_report() {
 	done
 	[ -z "$tokens" ] && { detail "$(t report)" "$(t report_missing)" "$(footer_width)"; return; }
 	family=${RESULTS# }; family=${family%% *}
-	body="{\"schema\":\"cli-report/1\",\"clientVersion\":\"$VERSION\",\"locale\":\"$LANG_UI\",\"reportTokens\":[${tokens#,}],\"local\":[${checks#,}]}"
+	body="{\"schema\":\"cli-report/2\",\"clientVersion\":\"$VERSION\",\"locale\":\"$LANG_UI\",\"reportTokens\":[${tokens#,}],\"local\":[${checks#,}]}"
 	response=$(curl "-$family" -sS --connect-timeout 8 --max-time 15 -H 'X-IPLense-CLI: 1' -H 'Content-Type: application/json' \
 		-A "IPLense-CLI/$VERSION" -X POST --data "$body" -w '\n%{http_code}' "$BASE/cli/v1/report" 2>/dev/null)
 	code=${response##*$'\n'}
@@ -1494,11 +1648,11 @@ main() {
 	case ${LC_ALL:-${LC_CTYPE:-${LANG:-}}} in
 	*UTF-8* | *utf8* | *UTF8* | *utf-8*)
 		MARK_HIT='●' MARK_CLEAR='·' MARK_NONE='–' SEP=' · '
-		BOX_TL='┌' BOX_TR='┐' BOX_BL='└' BOX_BR='┘' BOX_H='─' BOX_V='│' BAR='━' BAR_AT='┃'
+		BOX_H='─' BAR='━' BAR_AT='┃'
 		;;
 	*)
 		MARK_HIT='x' MARK_CLEAR='.' MARK_NONE='-' SEP=' / '
-		BOX_TL='+' BOX_TR='+' BOX_BL='+' BOX_BR='+' BOX_H='-' BOX_V='|' BAR='=' BAR_AT='|'
+		BOX_H='-' BAR='=' BAR_AT='|'
 		;;
 	esac
 
@@ -1589,17 +1743,13 @@ main() {
 		fi
 		output="{\"cli\":\"$VERSION\"$json_parts}"
 	else
+		REPORT_LINES=''
+		[ "$PRIVATE" = 0 ] && REPORT_LINES=$(create_report)
 		output=$(render_report)
 	fi
 	# Cells are padded to their width; the last one leaves trailing spaces behind.
 	output=$(printf '%s\n' "$output" | sed 's/ *$//')
 	printf '%s\n' "$output"
-	if [ "$JSON" = 0 ] && [ "$PRIVATE" = 0 ]; then
-		local link
-		link=$(create_report)
-		printf '%s\n' "$link"
-		output="$output"$'\n'"$link"
-	fi
 	if [ "$JSON" = 0 ]; then
 		local footer
 		footer=$(printf '  %s%s' "$(cell "$(t cli_page)" "$(footer_width)" dim)" "$BASE/$LANG_UI/cli")

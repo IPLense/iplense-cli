@@ -244,10 +244,22 @@ check "80/120 snapshots never exceed their terminal width" python3 tests/assert-
 
 # 1.2.1: Quick and Professional organisation types use the server's words, so a later type needs no client release.
 run "org-types-zh" "LANG=zh_CN.UTF-8 STUB_V4=org-v4.kv:200" -4
-check "Quick EDU badge" grep -q "LLC   EDU" <<<"$LAST"
+check "Quick EDU badge" grep -q "EDU *Example Cloud Networks LLC" <<<"$LAST"
 check "Quick property is the Education IP word" grep -q "教育 IP" <<<"$LAST"
 check "Professional government word" grep -q "机房 *政府" <<<"$LAST"
 check "Professional education word" grep -q "机房 *教育" <<<"$LAST"
+
+# 1.3: a platform with no IPv6 address is left out of an IPv6-only report; where port 25 is open the twelve mail
+# providers follow it, all at once.
+run "local-v6-no-address" "LANG=zh_CN.UTF-8 STUB_V6=full-v6.kv:200 STUB_NO_V6=prime,tiktok,reddit" -6
+no_v6_left_out() { ! grep -q -e 'Amazon Prime' -e TikTok -e Reddit <<<"$LAST" && grep -q Paramount <<<"$LAST"; }
+mail_shown() { grep -q Gmail <<<"$LAST" && grep -q Sina <<<"$LAST"; }
+check "IPv6 only: a platform without IPv6 is left out" no_v6_left_out
+check "mail providers follow an open port 25" mail_shown
+run "local-port25-closed" "LANG=zh_CN.UTF-8 STUB_V4=full-v4.kv:200 STUB_SMTP=silent" -4
+no_mail() { ! grep -q Gmail <<<"$LAST"; }
+check "no mail providers where port 25 is blocked" no_mail
+run "local-unavailable-v4" "LANG=en_US.UTF-8 STUB_V4=full-v4.kv:200 STUB_LOCAL=unavailable" -4
 
 run "help-en" "" -h
 run "help-zh" "" -l zh -h

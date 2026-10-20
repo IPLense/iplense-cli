@@ -42,9 +42,11 @@ def run(args, terminal):
 
 text = run(['-4'], True).decode()
 assert '正在查询本机 IPv4 结果…' in text
-for name, i in [('ChatGPT', 1), ('Claude', 2), ('Gemini', 3), ('Netflix', 4), ('Disney+', 5), ('YouTube Premium', 6), ('TikTok', 7), ('Prime Video', 8), ('Reddit', 9), ('出站 25 端口', 10)]:
-    assert f'正在检测 {name}（{i}/10）…' in text
-assert '\r\x1b[K\x1b[1;94m┌' in text
+names = ['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Netflix', 'Disney+', 'YouTube', 'Amazon Prime', 'HBO', 'Paramount+', 'TikTok', 'Reddit', '出站 25 端口']
+for i, name in enumerate(names, 1):
+    assert f'正在检测 {name}（{i}/{len(names)}）…' in text
+assert '正在检测各邮件服务商的 25 端口…' in text
+assert '\r\x1b[K \x1b[1mIPLense' in text
 for args, terminal in [(['-4'], False), (['-4', '-j'], True), (['-4', '-o', str(root / 'tests/.work/tty-saved.txt')], True)]:
     output = run(args, terminal).decode()
     assert '正在' not in output and '\x1b[K' not in output

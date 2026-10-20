@@ -54,6 +54,16 @@ https://iplense.cc/*)
 	printf '\n%s' "$status"
 	exit 0
 	;;
+*cloudflare-dns.com/dns-query*)
+	# A mail exchanger for each provider domain, as DNS-over-HTTPS answers it.
+	domain=${url#*name=}; domain=${domain%%&*}
+	printf '{"Status":0,"Answer":[{"name":"%s","type":15,"data":"10 mx.%s."}]}' "$domain" "$domain"
+	exit 0
+	;;
+*grok.com/cdn-cgi/trace) key=grok-trace ;;
+*grok.com/) key=grok ;;
+*hbomax.com/) key=hbo ;;
+*paramountplus.com/) key=paramount ;;
 *chatgpt.com/cdn-cgi/trace) key=chatgpt ;;
 *claude.ai/cdn-cgi/trace) key=claude ;;
 *gemini.google.com*) key=gemini ;;
@@ -69,6 +79,8 @@ https://iplense.cc/*)
 *reddit.com/*) key=reddit ;;
 *) exit 6 ;;
 esac
+# STUB_NO_V6 lists platforms (comma separated) with no IPv6 address: over IPv6 they cannot be resolved, as curl reports it (6).
+[ "$family" = 6 ] && case ",${STUB_NO_V6-}," in *",${key%%-*},"*) exit 6 ;; esac
 page=$fixtures/local/${STUB_LOCAL-}/$key.txt
 [ -n "${STUB_LOCAL-}" ] && [ -f "$page" ] || exit 7
 head_line=$(head -n 1 "$page")

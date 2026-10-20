@@ -60,8 +60,11 @@ sha256sum iplense.sh
 - **本机出口 IP**（来自 iplense.cc）：ASN、运营公司与位置、ASN 人类 / 自动化流量构成与注册机构；IPLense 评分、纯净度风险值与网络类型；各数据源的位置、使用类型、公司类型、风险值与风险因子。
 - **本地检测**（从本机发起，每个可达协议族分别检测；JSON 沿用首个协议族的本地结果对象）：
   - ChatGPT 与 Claude：平台看到的地区，对照官方支持地区名单；
-  - Gemini、Netflix、Disney+、YouTube Premium、TikTok、Prime Video、Reddit：是否可用及地区；
-  - 出站 25 端口：是否读到 Gmail MX 的 `220` 问候。先解析，再连接；连接被拒、连接超过 5 秒或连接后 5 秒内没有 `220` 为不可用；无法解析服务器或 Bash 不支持网络重定向为检测失败。
+  - Gemini、Grok、Netflix、Disney+、YouTube Premium、Amazon Prime、HBO、Paramount+、TikTok、Reddit：是否解锁及地区；
+  - 出站 25 端口：是否读到 Gmail MX 的 `220` 问候。先解析，再连接；连接被拒、连接超过 5 秒或连接后 5 秒内没有 `220` 为屏蔽；无法解析服务器或 Bash 不支持网络重定向为失败。
+  - 25 端口可用时，经 Cloudflare DNS-over-HTTPS 查到 12 家邮件服务商（Gmail、Outlook、Yahoo、iCloud、QQ、Mail.ru、AOL、GMX、Mail.com、163、搜狐、新浪）的邮件服务器，同时逐个连接。
+
+  IPv6 下，平台本身没有 IPv6 地址时不显示，所以“屏蔽”一定是平台拒绝了这个 IP。
 
   拿不到明确答复的项写“检测失败”，不做猜测。
 
@@ -73,8 +76,8 @@ sha256sum iplense.sh
   - 每个协议族各收到 1–3 次常规请求（桌面浏览器 User-Agent），对方看到本机 IP；
   - 脚本不登录、不提交账号信息；
   - Disney+ 检测会向 Disney 的服务注册一个匿名设备，只提交通用的设备描述（浏览器、Chrome、Windows），做法与下方致谢的开源脚本相同。
-- **25 端口**：只与 Gmail 的邮件服务器建立一次连接，读到问候后发送 `QUIT`，不发送任何邮件。
-- **报告**：默认发送自检令牌、客户端版本、语言、九个平台的状态与地区、25 端口状态，以及出口是否不同和脱敏后的出口 IP。本站只保存脱敏报告，保留 30 天，持有链接者可查看。`-p` 或 `-j` 不生成报告，本地检测结果不上传；`-f` 也不会在报告请求中发送完整 IP。
+- **25 端口**：与 Gmail 的邮件服务器建立一次连接；可用时，再向 `cloudflare-dns.com` 做一次 DNS-over-HTTPS 查询，并与 12 家邮件服务商各建立一次连接。读到问候后发送 `QUIT`，不发送任何邮件。
+- **报告**：默认发送自检令牌、客户端版本、语言、12 个平台的状态与地区、25 端口与各邮件服务商的结果，以及出口是否不同和脱敏后的出口 IP。本站只保存脱敏报告，保留 30 天，持有链接者可查看。`-p` 或 `-j` 不生成报告，本地检测结果不上传；`-f` 也不会在报告请求中发送完整 IP。
 - **反向解析**：`-f` 通过系统 DNS 查询检测 IP 的 PTR 记录。
 
 iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh/privacy)。
@@ -87,60 +90,66 @@ iplense.cc 如何处理查询，见 [IPLense 隐私政策](https://iplense.cc/zh
 
 ## 示例
 
-五节示例输出，使用脱敏文档保留地址，位置与平台地区均为 JP，只检测 IPv4，80 列：
+六节示例输出，使用脱敏文档保留地址，位置与平台地区均为 JP，只检测 IPv4，80 列（120 列终端同时检测 IPv4 和 IPv6 时两者左右并排）：
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             IPLense 本机 IP 体检                             │
-└──────────────────────────────────────────────────────────────────────────────┘
-  203.0.*.* · 命令行 1.2.0 · 2026-10-05 01:00 UTC
-
-一、基础信息
-  ASN           AS64500 · Example Cloud Networks   IDC
-  运营公司      Example Cloud Networks LLC   IDC
-  位置          Japan · Tokyo
-  IP 注册地区   JP · APNIC
-  ASN 流量构成  人类流量 82%  ━━━━━━━━━━━━━━━━┃━━━  自动化流量 18%
-  IP 属性        原生   机房
-
-二、多源 IP 类型
-  数据源         位置                 使用类型   公司类型
-  IPLocate       JP · Tokyo           机房       商业
-  ipapi.is       JP · Shinagawa       机房       机房
-  ipdata         JP · Higashi-Ōsaka   机房       商业
-  Abstract API   JP · Tokyo           机房       –
-  IPinfo         JP · Tokyo           机房       –
-  Proxycheck     JP · Tokyo           商业       –
-  IPGeolocation  本次额度暂不可用
-  Ipregistry     本次调用失败
-
-三、风险评分与风险因子
-  IPLense 评分          72  ━━━━━━━━━━━━━━┃━━━━━  良好
-  IP 纯净度 风险值  18/100  ━━━┃━━━━━━━━━━━━━━━━  低
-
-  数据源        风险值  托管  代理  VPN  Tor  中转  滥用  机器人
-  IPLocate      35      ●     ·     ·    ·    –     ·     –
-  ipapi.is      8       ●     ·     ·    ·    –     ·     –
-  ipdata        62      ●     ●     –    ·    ·     ●     –
-  Abstract API  中      ●     ·     ·    ·    ·     –     –
-  Proxycheck    0       –     ·     ·    –    –     –     –
-  AbuseIPDB     0       –     –     –    –    –     ·     –
-  ● 命中  · 未命中  – 该来源不提供
-
-四、AI 与流媒体
-        ChatGPT   Claude    Gemini
-  状态  支持地区  支持地区  可用
-  地区  JP        JP        JP
-
-        Netflix  Disney+  YouTube Premium  TikTok  Prime Video  Reddit
-  状态  可用     可用     可用             可用    可用         可用
-  地区  JP       JP       JP               JP      JP           JP
-
-五、出站 25 端口
-   可用
-
+ IPLense 命令行 IP 体检   bash <(curl -sL https://iplense.cc/cli)
+ IPv4 203.0.*.*                                     1.3.0   2026-10-05 01:00 UTC
 ────────────────────────────────────────────────────────────────────────────────
   报告链接    https://iplense.cc/r/AAAAAAAAAAAAAAAAAAAAAA.svg （保留 30 天）
+
+一、IP 评分     IPv4
+  IPLense 评分  72  ━━━━━━━━━━━━━━┃━━━━━  良好
+  IP 纯净度     18  ━━━┃━━━━━━━━━━━━━━━━  低风险
+
+二、基础信息    IPv4
+  ASN 名称       IDC   Example Cloud Networks
+  运营公司       IDC   Example Cloud Networks LLC
+  IP 属性        原生   机房
+  AS 号码       AS64500
+  ASN 流量构成  人类 82% ━━━━━━━━━━━━━┃━━ 自动化 18%
+  IP 注册地区   JP  APNIC
+  IP 使用地区   Tokyo, Japan
+
+三、多源 IP 类型
+                IPv4
+  数据源        位置                   使用类型  公司类型
+  IPLocate      Tokyo, JP                机房      商业
+  ipapi.is      Shinagawa, JP            机房      机房
+  ipdata        Higashi-Ōsaka, JP        机房      商业
+  IPGeolocation 暂不可用
+  Abstract API  Tokyo, JP                机房       –
+  Ipregistry    获取失败
+  IPinfo        Tokyo, JP                机房       –
+  Proxycheck    Tokyo, JP                商业       –
+
+四、多源 IP 风险
+                IPv4
+  数据源        风险值       托管 代理 VPN Tor 中转 滥用 机器人
+  IPLocate      35 中风险     ●    ·    ·   ·   –    ·     –
+  ipapi.is      8 低风险      ●    ·    ·   ·   –    ·     –
+  ipdata        62 高风险     ●    ●    –   ·   ·    ●     –
+  IPGeolocation 暂不可用
+  Abstract API  中风险        ●    ·    ·   ·   ·    –     –
+  Ipregistry    获取失败
+  Proxycheck    0 低风险      –    ·    ·   –   –    –     –
+  AbuseIPDB     0 低风险      –    –    –   –   –    ·     –
+  ● 命中   · 未命中   – 该来源不提供
+
+五、AI 与流媒体
+        ChatGPT  Claude  Gemini  Grok    Netflix  Disney+
+  IPv4   解锁     解锁    解锁    解锁    解锁     解锁
+         JP       JP      JP      CA      JP       JP
+
+        YouTube  Amazon Prime  HBO     Paramount+  TikTok  Reddit
+  IPv4   解锁     解锁          解锁    解锁        解锁    解锁
+         JP       JP            CA      CA          JP      JP
+
+六、出站 25 端口
+  IPv4   可用     Gmail   Outlook   Yahoo   Apple   QQ   Mail.ru   AOL   GMX
+                  Mail.com   163   Sohu   Sina
+
+────────────────────────────────────────────────────────────────────────────────
   关于命令行  https://iplense.cc/zh/cli
 ```
 

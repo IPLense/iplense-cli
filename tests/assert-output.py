@@ -32,19 +32,23 @@ for path in (root / 'snapshots').glob('*json*.txt'):
 
 request = json.loads((root / '.work/report.json').read_text())
 assert set(request) == {'schema', 'clientVersion', 'locale', 'reportTokens', 'local'}
-assert request['schema'] == 'cli-report/1' and request['clientVersion'] == VERSION
+assert request['schema'] == 'cli-report/2' and request['clientVersion'] == VERSION
 assert len(request['local']) == len(request['reportTokens']) == 2
-platforms = {'chatgpt', 'claude', 'gemini', 'netflix', 'disney', 'youtube', 'tiktok', 'prime', 'reddit'}
+platforms = {'chatgpt', 'claude', 'gemini', 'grok', 'netflix', 'disney', 'youtube', 'prime', 'hbo', 'paramount', 'tiktok', 'reddit'}
+mail = {'gmail', 'outlook', 'yahoo', 'apple', 'qq', 'mailru', 'aol', 'gmx', 'mailcom', 'netease', 'sohu', 'sina'}
 for local in request['local']:
-    assert set(local) == {'family', 'platforms', 'port25', 'exitDiffers', 'exitIp'}
+    assert set(local) == {'family', 'platforms', 'port25', 'mail', 'exitDiffers', 'exitIp'}
     assert set(local['platforms']) == platforms
     for name, check in local['platforms'].items():
         assert set(check) == {'status', 'region'}
-        states = {'supported', 'unsupported', 'region', 'failed'} if name in ('chatgpt', 'claude') else {'available', 'unavailable', 'failed'}
+        states = {'supported', 'unsupported', 'region', 'failed', 'no_ipv6'} if name in ('chatgpt', 'claude') else {'available', 'unavailable', 'failed', 'no_ipv6'}
         if name == 'netflix':
             states.add('originals_only')
         assert check['status'] in states
         assert re.fullmatch('[A-Z]{2}|', check['region'])
     assert local['port25'] in {'available', 'unavailable', 'failed'}
+    # Mail providers only where port 25 is open, all twelve then.
+    assert (set(local['mail']) == mail) if local['port25'] == 'available' else local['mail'] == {}
+    assert all(state in {'open', 'closed', 'no_ipv6', 'failed'} for state in local['mail'].values())
     assert type(local['exitDiffers']) is bool
     assert '*' in local['exitIp']

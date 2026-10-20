@@ -1,56 +1,63 @@
-[1;94m┌──────────────────────────────────────────────────────────────────────────────┐[0m
-[1;94m│[0m                              [1mIPLense self-check[0m                              [1;94m│[0m
-[1;94m└──────────────────────────────────────────────────────────────────────────────┘[0m
-  [1m203.0.*.*[0m[2m · CLI 1.2.1 · 2026-10-05 01:00 UTC[0m
+ [1mIPLense CLI IP check[0m   [2mbash <(curl -sL https://iplense.cc/cli)[0m
+ [1;94mIPv4[0m 203.0.*.*                                     [2m1.3.0   2026-10-05 01:00 UTC[0m
+[2m────────────────────────────────────────────────────────────────────────────────[0m
 
-[1;94m1. Basics[0m
-  [2mASN[0m            AS64500 · Example Cloud Networks  [97;41m IDC [0m
-  [2mOperator[0m       Example Cloud Networks LLC  [97;41m IDC [0m
-  [2mLocation[0m       Japan · Tokyo
-  [2mRegistered in[0m  JP · APNIC
-  [2mASN traffic[0m    Human 81.68%  [32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[1m┃[0m[1;94m━[0m[1;94m━[0m[1;94m━[0m  Automated 18.32%
-  [2mIP Property[0m    [97;42m Native [0m [97;41m Datacenter [0m
+[1;94m1. IP score[0m     [1;94mIPv4[0m
+  IPLense Score [33m72 [0m [31m━━━━━━━━━━━━[0m[33m━━[0m[1m┃[0m[33m━[0m[32m━━━━[0m  [33mGood[0m
+  IP Purity     [32m18 [0m [32m━━━[0m[1m┃[0m[33m━━━━━━[0m[31m━━━━━━━━━━[0m  [32mLow risk[0m
 
-[1;94m2. Multi-source IP Types[0m
-  [2mSource[0m         [2mLocation[0m                               [2m Usage[0m      [2m Company[0m
-  [1mIPLocate[0m       JP · Tokyo                             [97;41m IDC [0m       [30;43m Business [0m
-  [1mipapi.is[0m       JP · Shinagawa                         [97;41m IDC [0m       [97;41m IDC [0m
-  [1mipdata[0m         JP · Higashi-Ōsaka Industrial          [97;41m IDC [0m       [30;43m Business [0m
-                 District North Ward
-  [1mAbstract API[0m   JP · Tokyo                             [97;41m IDC [0m       [90m –[0m
-  [1mIPinfo[0m         JP · Tokyo                             [97;41m IDC [0m       [90m –[0m
-  [1mProxycheck[0m     JP · Tokyo                             [30;43m Business [0m  [90m –[0m
-  [1mIPGeolocation[0m  [33mQuota temporarily unavailable[0m
-  [1mIpregistry[0m     [31mThis call failed[0m
+[1;94m2. Basics[0m       [1;94mIPv4[0m
+  ASN name      [97;41m IDC [0m  Example Cloud Networks
+  Operator      [97;41m IDC [0m  Example Cloud Networks LLC
+  IP Property   [97;42m Native [0m [97;41m Datacenter [0m
+  AS number     AS64500
+  ASN traffic   [2mHuman[0m [32m81.68%[0m [32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[32m━[0m[1m┃[0m[1;94m━[0m[1;94m━[0m [2mBots[0m [31m18.32%[0m
+  Registered in JP  [2mAPNIC[0m
+  Used in       Tokyo, Japan
 
-[1;94m3. Risk scores and factors[0m
-  [2mIPLense Score[0m                 [33m72[0m  [31m━━━━━━━━━━━━[0m[33m━━[0m[1m┃[0m[33m━[0m[32m━━━━[0m  [33mGood[0m
-  [2mIP Purity Risk value[0m      [32m18/100[0m  [32m━━━[0m[1m┃[0m[33m━━━━━━[0m[31m━━━━━━━━━━[0m  [32mLow[0m
+[1;94m3. IP types by source[0m
+                [1;94mIPv4[0m
+  [2mSource[0m        [2mLocation[0m                [2mUsage[0m    [2mCompany[0m
+  [1mIPLocate[0m      Tokyo, JP               [97;41m IDC [0m   [30;43m Business  [0m
+  [1mipapi.is[0m      Shinagawa, JP           [97;41m IDC [0m     [97;41m IDC [0m
+  [1mipdata[0m        Higashi-Ōsaka           [97;41m IDC [0m   [30;43m Business  [0m
+                Industrial District
+                North Ward, JP
+  [1mIPGeolocation[0m [33mTemporarily unavailable[0m
+  [1mAbstract API[0m  Tokyo, JP               [97;41m IDC [0m       [90m–[0m
+  [1mIpregistry[0m    [31mError[0m
+  [1mIPinfo[0m        Tokyo, JP               [97;41m IDC [0m       [90m–[0m
+  [1mProxycheck[0m    Tokyo, JP             [30;43m Business  [0m    [90m–[0m
 
-  [2mSource[0m        [2mRisk value[0m  [2mHosting[0m  [2mProxy[0m  [2mVPN[0m  [2mTor[0m  [2mRelay[0m  [2mAbuse[0m  [2mBot[0m
-  [1mIPLocate[0m      [33m35[0m          [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [90m–[0m      [32m·[0m      [90m–[0m
-  [1mipapi.is[0m      [32m8[0m           [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [90m–[0m      [32m·[0m      [90m–[0m
-  [1mipdata[0m        [31m62[0m          [31m●[0m        [31m●[0m      [90m–[0m    [32m·[0m    [32m·[0m      [31m●[0m      [90m–[0m
-  [1mAbstract API[0m  [33mMedium[0m      [31m●[0m        [32m·[0m      [32m·[0m    [32m·[0m    [32m·[0m      [90m–[0m      [90m–[0m
-  [1mProxycheck[0m    [32m0[0m           [90m–[0m        [32m·[0m      [32m·[0m    [90m–[0m    [90m–[0m      [90m–[0m      [90m–[0m
-  [1mAbuseIPDB[0m     [32m0[0m           [90m–[0m        [90m–[0m      [90m–[0m    [90m–[0m    [90m–[0m      [32m·[0m      [90m–[0m
-  [31m●[0m Detected  [32m·[0m Not detected  [90m–[0m Not provided
+[1;94m4. IP risk by source[0m
+                [1;94mIPv4[0m
+  [2mSource[0m        [2mRisk value[0m   [2mHosting[0m [2mProxy[0m [2mVPN[0m [2mTor[0m [2mRelay[0m [2mAbuse[0m [2mBot[0m
+  [1mIPLocate[0m      [33m35 Medium[0m       [31m●[0m      [32m·[0m    [32m·[0m   [32m·[0m    [90m–[0m     [32m·[0m    [90m–[0m
+  [1mipapi.is[0m      [32m8 Low risk[0m      [31m●[0m      [32m·[0m    [32m·[0m   [32m·[0m    [90m–[0m     [32m·[0m    [90m–[0m
+  [1mipdata[0m        [31m62 High risk[0m    [31m●[0m      [31m●[0m    [90m–[0m   [32m·[0m    [32m·[0m     [31m●[0m    [90m–[0m
+  [1mIPGeolocation[0m [33mTemporarily unavailable[0m
+  [1mAbstract API[0m  [33mMedium[0m          [31m●[0m      [32m·[0m    [32m·[0m   [32m·[0m    [32m·[0m     [90m–[0m    [90m–[0m
+  [1mIpregistry[0m    [31mError[0m
+  [1mProxycheck[0m    [32m0 Low risk[0m      [90m–[0m      [32m·[0m    [32m·[0m   [90m–[0m    [90m–[0m     [90m–[0m    [90m–[0m
+  [1mAbuseIPDB[0m     [32m0 Low risk[0m      [90m–[0m      [90m–[0m    [90m–[0m   [90m–[0m    [90m–[0m     [32m·[0m    [90m–[0m
+  [31m●[0m [2mDetected[0m   [32m·[0m [2mNot detected[0m   [90m–[0m [2mNot provided[0m
 
-[1;94m4. AI and streaming[0m
-          [1mChatGPT[0m           [1mClaude[0m            [1mGemini[0m
-  [2mStatus[0m  [97;42mSupported region[0m  [97;42mSupported region[0m  [97;42mAvailable[0m
-  [2mRegion[0m  CA                CA                CA
+[1;94m5. AI and streaming[0m
+        [1mChatGPT[0m     [1mClaude[0m      [1mGemini[0m      [1mGrok[0m        [1mNetflix[0m     [1mDisney+[0m
+  [1;94mIPv4[0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m
+         [2mCA[0m          [2mCA[0m          [2mCA[0m          [2mCA[0m          [2mCA[0m          [2mCA[0m
 
-          [1mNetflix[0m    [1mDisney+[0m    [1mYouTube Premium[0m
-  [2mStatus[0m  [97;42mAvailable[0m  [97;42mAvailable[0m  [97;42mAvailable[0m
-  [2mRegion[0m  CA         CA         CA
+        [1mYouTube[0m     [1mAmazon Prime[0m  [1mHBO[0m         [1mParamount+[0m  [1mTikTok[0m
+  [1;94mIPv4[0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m    [97;42m Unlocked [0m  [97;42m Unlocked [0m  [97;42m Unlocked [0m
+         [2mCA[0m          [2mCA[0m            [2mCA[0m          [2mCA[0m          [2mCA[0m
 
-          [1mTikTok[0m     [1mPrime Video[0m  [1mReddit[0m
-  [2mStatus[0m  [97;42mAvailable[0m  [97;42mAvailable[0m    [97;42mAvailable[0m
-  [2mRegion[0m  CA         CA           CA
+        [1mReddit[0m
+  [1;94mIPv4[0m  [97;42m Unlocked [0m
+         [2mCA[0m
 
-[1;94m5. Outbound port 25[0m
-  [97;42m Available [0m
+[1;94m6. Outbound port 25[0m
+  [1;94mIPv4[0m  [97;42m Open [0m   [97;42m Gmail [0m [97;42m Outlook [0m [97;42m Yahoo [0m [97;42m Apple [0m [97;42m QQ [0m [97;42m Mail.ru [0m [97;42m AOL [0m [97;42m GMX [0m
+                 [97;42m Mail.com [0m [97;42m 163 [0m [97;42m Sohu [0m [97;42m Sina [0m
 
 [2m────────────────────────────────────────────────────────────────────────────────[0m
   [2mAbout the CLI[0m  https://iplense.cc/en/cli
